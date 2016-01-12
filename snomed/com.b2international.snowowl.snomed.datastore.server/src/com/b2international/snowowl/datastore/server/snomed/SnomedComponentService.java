@@ -314,12 +314,12 @@ public class SnomedComponentService implements ISnomedComponentService, IPostSto
 	}
 
 	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.datastore.IPostStoreUpdateListener2#getRepositoryUuid()
+	 * @see com.b2international.snowowl.datastore.IPostStoreUpdateListener2#getRepositoryUuids()
 	 */
 	@Override
-	public String getRepositoryUuid() {
+	public String[] getRepositoryUuids() {
 		final ICDOConnection connection = ApplicationContext.getInstance().getService(ICDOConnectionManager.class).get(SnomedPackage.eINSTANCE);
-		return connection.getUuid();
+		return new String[] { connection.getUuid() };
 	}
 	
 	/*

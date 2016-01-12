@@ -106,15 +106,15 @@ public class PostStoreUpdateManager implements IPostStoreUpdateManager {
 		
 		if (listener instanceof IPostStoreUpdateListener2) {
 			
-			if (activeBranchOnly) {
+			String[] repositoryUuids = ((IPostStoreUpdateListener2) listener).getRepositoryUuids();
 				
-				repositoryAwareActiveBranchListeners.put(((IPostStoreUpdateListener2) listener).getRepositoryUuid(), listener);
-				
-			} else {
-				
-				repositoryAwareListeners.put(((IPostStoreUpdateListener2) listener).getRepositoryUuid(), listener);
-				
-			}
+				for (String repositoryUuid : repositoryUuids) {
+					if (activeBranchOnly) {
+						repositoryAwareActiveBranchListeners.put(repositoryUuid, listener);
+					} else {
+						repositoryAwareListeners.put(repositoryUuid, listener);
+					}
+				}
 			
 		} else {
 			
@@ -139,8 +139,9 @@ public class PostStoreUpdateManager implements IPostStoreUpdateManager {
 		
 		if (listener instanceof IPostStoreUpdateListener2) {
 			
-			repositoryAwareActiveBranchListeners.remove(((IPostStoreUpdateListener2) listener).getRepositoryUuid(), listener);
-			repositoryAwareListeners.remove(((IPostStoreUpdateListener2) listener).getRepositoryUuid(), listener);
+			String[] repositoryUuid = ((IPostStoreUpdateListener2) listener).getRepositoryUuids();
+			repositoryAwareActiveBranchListeners.remove(repositoryUuid, listener);
+			repositoryAwareListeners.remove(repositoryUuid, listener);
 			
 		} else {
 		

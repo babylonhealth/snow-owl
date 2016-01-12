@@ -19,17 +19,17 @@ import com.b2international.snowowl.datastore.cdo.ICDOManagedItem;
 
 /**
  * Extended {@link IPostStoreUpdateListener post store update listener} with an additional
- * {@link #getRepositoryUuid() repository UUID} information for identifying the repository the
+ * {@link #getRepositoryUuids() repository UUIDs} information for identifying the repositories the
  * current listener listening for changes.
  * @see IPostStoreUpdateListener
  */
 public interface IPostStoreUpdateListener2 extends IPostStoreUpdateListener {
 
 	/**
-	 * Returns with the unique ID of the repository what the current listeners listens for. 
-	 * @return the repository UUID.
-	 * @see ICDOManagedItem#getUuid()
+	 * Returns an array of unique ID of the repositories that the current listeners listens for. 
+	 * @return the repository UUID array.
+	 * @see ICDOManagedItem#getUuids()
 	 */
-	String getRepositoryUuid();
+	String[] getRepositoryUuids();
 	
 }

@@ -57,8 +57,8 @@ public abstract class SnomedCachingComponentLabelProviderService<C extends Snome
 	}
 
 	@Override
-	public String getRepositoryUuid() {
-		return REPOSITORY_UUID;
+	public String[] getRepositoryUuids() {
+		return new String [] { REPOSITORY_UUID };
 	}
 	
 	/**

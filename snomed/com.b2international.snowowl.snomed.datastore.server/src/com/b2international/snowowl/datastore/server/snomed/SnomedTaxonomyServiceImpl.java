@@ -271,8 +271,8 @@ public class SnomedTaxonomyServiceImpl implements SnomedTaxonomyService, IPostSt
 	}
 
 	@Override
-	public String getRepositoryUuid() {
-		return SnomedDatastoreActivator.REPOSITORY_UUID;
+	public String[] getRepositoryUuids() {
+		return new String[] { SnomedDatastoreActivator.REPOSITORY_UUID };
 	}
 
 	private SnomedTaxonomy getTaxonomy(final IBranchPath branchPath) {
