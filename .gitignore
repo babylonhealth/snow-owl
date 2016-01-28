@@ -2,13 +2,12 @@
 # Directories that we don't want git to track in this repository
 #
 
-bin
 target
 .ispace
 .settings
 
 #
-# Various temporary files 
+# Various temporary files
 #
 
 ._*
@@ -19,3 +18,5 @@ target
 *.log
 *.iml
 *.idea
+.project
+.classpath
