@@ -1129,7 +1129,13 @@ public class CDOTransactionImpl extends CDOViewImpl implements InternalCDOTransa
       CDOID id = ancestorGoalDelta.getID();
       InternalCDORevision ancestorRevision = (InternalCDORevision)ancestorProvider.getRevision(id);
 
-      InternalCDOObject object = getObject(id);
+      InternalCDOObject object;
+      try {
+    	object = getObject(id);
+      } catch (ObjectNotFoundException e) {
+    	OM.LOG.warn(String.format("Skipping feature delta '%s' on possible deleted object '%s'", ancestorGoalDelta, CDOIDUtil.getLong(e.getID())));
+    	continue;
+	  }
       boolean revisionChanged = false;
 
       InternalCDORevision targetRevision = object.cdoRevision();
@@ -1142,6 +1148,13 @@ public class CDOTransactionImpl extends CDOViewImpl implements InternalCDOTransa
 
       oldRevisions.put(id, targetRevision);
 
+      // XXX use targetRevision if ancestorRevision is not available
+      // in case of the target still has the object but the ancestor did not have it at ancestor point time
+      // use the target revision as base revision and try to apply the delta on it
+      if (ancestorRevision == null) {
+    	ancestorRevision = targetRevision;
+      }
+      
       InternalCDORevision goalRevision = ancestorRevision.copy();
       goalRevision.setBranchPoint(this);
       if (!keepVersions)
