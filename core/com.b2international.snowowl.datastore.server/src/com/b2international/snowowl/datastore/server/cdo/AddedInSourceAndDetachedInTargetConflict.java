@@ -18,6 +18,7 @@ package com.b2international.snowowl.datastore.server.cdo;
 import java.text.MessageFormat;
 
 import org.eclipse.emf.cdo.common.id.CDOID;
+import org.eclipse.emf.cdo.common.id.CDOIDUtil;
 import org.eclipse.emf.spi.cdo.DefaultCDOMerger.Conflict;
 
 /**
@@ -39,12 +40,12 @@ public class AddedInSourceAndDetachedInTargetConflict extends Conflict {
 		return sourceId;
 	}
 
-	public CDOID getSourceId() {
-		return sourceId;
+	public long getSourceId() {
+		return CDOIDUtil.getLong(sourceId);
 	}
 
-	public CDOID getTargetId() {
-		return targetId;
+	public long getTargetId() {
+		return CDOIDUtil.getLong(targetId);
 	}
 
 	@Override
