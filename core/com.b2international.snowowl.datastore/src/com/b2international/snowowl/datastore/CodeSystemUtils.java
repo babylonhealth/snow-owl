@@ -16,9 +16,12 @@
 package com.b2international.snowowl.datastore;
 
 import static com.b2international.snowowl.core.ApplicationContext.getServiceForClass;
+import static com.b2international.snowowl.datastore.BranchPathUtils.isMain;
+import static com.b2international.snowowl.datastore.ICodeSystem.TO_BRANCH_PATH_FUNCTION;
 import static com.google.common.base.Strings.nullToEmpty;
 
 import java.util.Comparator;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import javax.annotation.Nullable;
@@ -33,11 +36,15 @@ import com.b2international.snowowl.core.api.NullBranchPath;
 import com.b2international.snowowl.datastore.cdo.ICDOConnection;
 import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
 import com.b2international.snowowl.datastore.cdo.ICDOManagedItem;
+import com.b2international.snowowl.datastore.tasks.TaskManager;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Maps;
 
 /**
  * Contains various continent methods for {@link ICodeSystem} and {@link ICodeSystemVersion}.
@@ -46,6 +53,25 @@ import com.google.common.cache.LoadingCache;
 public class CodeSystemUtils {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CodeSystemUtils.class);
+
+
+	private static final class SameRepositoryCodeSystemPredicate implements Predicate<ICodeSystem> {
+	
+		private final String repositoryUUID;
+
+		private SameRepositoryCodeSystemPredicate(String repositoryUUID) {
+			this.repositoryUUID = Preconditions.checkNotNull(repositoryUUID, "repository UUID cannot be null");
+		}
+
+		@Override
+		public boolean apply(ICodeSystem input) {
+			return input.getRepositoryUuid().equals(repositoryUUID);
+		}
+	}
+	
+
+
+
 	
 	private static final LoadingCache<String, ICDOManagedItem<?>> TOOLING_ID_MANAGED_ITEM_CACHE = CacheBuilder.newBuilder().build(new CacheLoader<String, ICDOManagedItem<?>>() {
 		@Override public ICDOManagedItem<?> load(final String toolingId) throws Exception {
@@ -70,9 +96,9 @@ public class CodeSystemUtils {
 	 */
 	public static final Comparator<String> TOOLING_FEATURE_NAME_COMPARATOR = new Comparator<String>() {
 		public int compare(final String leftUuid, final String rightUuid) {
-			final String leftName = nullToEmpty(CodeSystemUtils.getSnowOwlToolingName(leftUuid));
-			final String rightName = nullToEmpty(CodeSystemUtils.getSnowOwlToolingName(rightUuid));
-			return leftName.compareToIgnoreCase(rightName);
+		final String leftName = nullToEmpty(CodeSystemUtils.getSnowOwlToolingName(leftUuid));
+		final String rightName = nullToEmpty(CodeSystemUtils.getSnowOwlToolingName(rightUuid));
+		return leftName.compareToIgnoreCase(rightName);
 		}
 	};
 	
@@ -101,6 +127,29 @@ public class CodeSystemUtils {
 		}
 		
 		return null;
+	}
+
+
+	
+	public static ICodeSystem findMatchingCodeSystem(String branchPath, String repositoryUuid) {
+		return findMatchingCodeSystem(BranchPathUtils.createPath(branchPath), repositoryUuid);
+	}
+	
+	
+	public static ICodeSystem findMatchingCodeSystem(IBranchPath branchPath, String repositoryUuid) {
+		
+		// branchPath can be: main, task branch, version/tag branch Path, extension branchPath 
+		Iterable<ICodeSystem> codeSystemsInRepositoryUuid = Iterables.filter(getTerminologyRegistryService().getCodeSystems(new UserBranchPathMap()), sameRepositoryCodeSystemPredicate(repositoryUuid));
+		Map<String, ICodeSystem> branchPathToCodeSystemMap = Maps.uniqueIndex(codeSystemsInRepositoryUuid, TO_BRANCH_PATH_FUNCTION);
+
+		for (IBranchPath path = branchPath; !isMain(path); path = path.getParent()) {
+			if (branchPathToCodeSystemMap.containsKey(path.getPath())) {
+				return branchPathToCodeSystemMap.get(path.getPath());
+			}
+		}
+
+		// falling back to the repositoryUUID's main code system.
+		return Iterables.find(codeSystemsInRepositoryUuid, ICodeSystem.IS_MAIN_BRANCH_PATH_PREDICATE); 
 	}
 	
 	/**
@@ -170,6 +219,10 @@ public class CodeSystemUtils {
 		return getConnection(repositoryUuid).getSnowOwlTerminologyComponentId();
 	}
 	
+	public static Predicate<ICodeSystem> sameRepositoryCodeSystemPredicate(final String repositoryUUID) {
+		return new SameRepositoryCodeSystemPredicate(repositoryUUID);
+	}
+	
 	/*returns with the connection for the given repository UUID*/
 	private static ICDOConnection getConnection(final String repositoryUuid) {
 		return getConnectionManager().getByUuid(repositoryUuid);
@@ -178,6 +231,16 @@ public class CodeSystemUtils {
 	/*returns with the connection manager service*/
 	private static ICDOConnectionManager getConnectionManager() {
 		return ApplicationContext.getInstance().getService(ICDOConnectionManager.class);
+	}
+	
+	/*returns with the task manager service*/
+	private static TaskManager getTaskManager() {
+		return ApplicationContext.getInstance().getService(TaskManager.class);
+	}
+	
+	/*returns with the terminology registry service*/
+	private static TerminologyRegistryService getTerminologyRegistryService() {
+		return ApplicationContext.getInstance().getService(TerminologyRegistryService.class);
 	}
 	
 	/*applies the given function on a CDO manager item which application specific tooling ID equals with the argument.
@@ -197,5 +260,4 @@ public class CodeSystemUtils {
 		}
 		
 	}
-	
 }
