@@ -18,14 +18,15 @@ package com.b2international.snowowl.snomed.importer.rf2.model;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
-import java.sql.Connection;
 import java.util.Arrays;
 import java.util.Collection;
 
 import org.eclipse.emf.cdo.common.branch.CDOBranchPoint;
 import org.slf4j.Logger;
 
-import com.b2international.commons.collections.LongSet;
+import com.b2international.collections.PrimitiveSets;
+import com.b2international.collections.longs.LongSet;
+import com.b2international.index.revision.RevisionIndex;
 import com.b2international.snowowl.datastore.cdo.ICDOTransactionAggregator;
 import com.b2international.snowowl.snomed.Component;
 import com.b2international.snowowl.snomed.common.ContentSubType;
@@ -36,7 +37,6 @@ import com.b2international.snowowl.snomed.importer.rf2.terminology.ComponentLook
 import com.b2international.snowowl.snomed.importer.rf2.util.EffectiveTimeBaseTransactionAggregatorSupplier;
 import com.b2international.snowowl.snomed.importer.rf2.util.ImportUtil;
 import com.b2international.snowowl.snomed.snomedrefset.SnomedRefSet;
-import com.b2international.snowowl.snomed.snomedrefset.SnomedRefSetMember;
 import com.google.common.base.Supplier;
 
 /**
@@ -48,7 +48,7 @@ public class SnomedImportContext implements ISnomedPostProcessorContext, AutoClo
 
 	private ComponentLookup<Component> componentLookup;
 	private ComponentLookup<SnomedRefSet> refSetLookup;
-	private RefSetMemberLookup<SnomedRefSetMember> refSetMemberLookup;
+	private RefSetMemberLookup refSetMemberLookup;
 
 	private String userId;
 	private String commitMessage;
@@ -65,10 +65,17 @@ public class SnomedImportContext implements ISnomedPostProcessorContext, AutoClo
 
 	private String[] sortedIgnoredRefSetIds;
 	private File stagingDirectory;
-	private String languageRefSetId;
 
-	private final LongSet visitedConcepts = new LongSet();
-	private final LongSet visitedRefSets = new LongSet();
+	private final LongSet visitedConcepts = PrimitiveSets.newLongOpenHashSet();
+	private final LongSet visitedRefSets = PrimitiveSets.newLongOpenHashSet();
+
+	private String codeSystemShortName;
+	private String codeSystemOID;
+	private final RevisionIndex index;
+
+	public SnomedImportContext(RevisionIndex index) {
+		this.index = index;
+	}
 
 	@Override
 	public void close() throws Exception {
@@ -77,24 +84,6 @@ public class SnomedImportContext implements ISnomedPostProcessorContext, AutoClo
 		if (getEditingContext() != null) {
 			getEditingContext().close();
 		}
-	}
-
-	/**
-	 * Returns the primary language reference set identifier, used for determining component labels.
-	 * 
-	 * @return the primary language reference set identifier
-	 */
-	public String getLanguageRefSetId() {
-		return languageRefSetId;
-	}
-
-	/**
-	 * Sets a new primary language reference set identifier for the import context.
-	 * 
-	 * @param languageRefSetId the primary language reference set identifier to set
-	 */
-	public void setLanguageRefSetId(final String languageRefSetId) {
-		this.languageRefSetId = languageRefSetId;
 	}
 
 	/**
@@ -191,7 +180,7 @@ public class SnomedImportContext implements ISnomedPostProcessorContext, AutoClo
 	 * 
 	 * @return the reference set member lookup map
 	 */
-	public RefSetMemberLookup<SnomedRefSetMember> getRefSetMemberLookup() {
+	public RefSetMemberLookup getRefSetMemberLookup() {
 		return refSetMemberLookup;
 	}
 
@@ -232,9 +221,9 @@ public class SnomedImportContext implements ISnomedPostProcessorContext, AutoClo
 	public void setEditingContext(final SnomedEditingContext editingContext) {
 		this.editingContext = checkNotNull(editingContext, "Editing context argument may not be null.");
 
-		componentLookup = new ComponentLookup<Component>(editingContext, Component.class);
-		refSetLookup = new ComponentLookup<SnomedRefSet>(editingContext, SnomedRefSet.class);
-		refSetMemberLookup = new RefSetMemberLookup<SnomedRefSetMember>(editingContext);
+		componentLookup = new ComponentLookup<Component>(index, editingContext, Component.class);
+		refSetLookup = new ComponentLookup<SnomedRefSet>(index, editingContext, SnomedRefSet.class);
+		refSetMemberLookup = new RefSetMemberLookup(index, editingContext);
 	}
 
 	/**
@@ -430,5 +419,33 @@ public class SnomedImportContext implements ISnomedPostProcessorContext, AutoClo
 	 */
 	public LongSet getVisitedRefSets() {
 		return visitedRefSets;
+	}
+	
+	/**
+	 * @return the snomedReleaseShortName
+	 */
+	public String getCodeSystemShortName() {
+		return codeSystemShortName;
+	}
+
+	/**
+	 * @param codeSystemShortName the snomedReleaseShortName to set
+	 */
+	public void setCodeSystemShortName(String codeSystemShortName) {
+		this.codeSystemShortName = codeSystemShortName;
+	}
+
+	/**
+	 * @return the snomedReleaseOID
+	 */
+	public String getCodeSystemOID() {
+		return codeSystemOID;
+	}
+
+	/**
+	 * @param codeSystemOID the snomedReleaseOID to set
+	 */
+	public void setCodeSystemOID(String codeSystemOID) {
+		this.codeSystemOID = codeSystemOID;
 	}
 }

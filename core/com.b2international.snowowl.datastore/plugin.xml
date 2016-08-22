@@ -11,26 +11,12 @@
    <extension-point id="nodeTransformer" name="nodeTransformer" schema="schema/nodeTransformer.exsd"/>
    <extension-point id="contentAvailabilityInfoProvider" name="Content Availability Info Provider" schema="schema/contentAvailabilityInfoProvider.exsd"/>
    <extension-point id="cdoRootResourceNameProvider" name="CDO root resource" schema="schema/cdoRootResourceNameProvider.exsd"/>
+   <extension-point id="mappingProvider" name="mappingProvider" schema="schema/mappingProvider.exsd"/>
    <extension
          point="com.b2international.snowowl.datastore.serviceConfigJob">
       <serviceConfigJob
-            class="com.b2international.snowowl.datastore.personalization.PreviousPicksManagerConfigJob"
-            id="com.b2international.snowowl.datastore.personalization.PreviousPicksManagerConfigJob"
-            terminologyId="UNSPECIFIED">
-      </serviceConfigJob>
-      <serviceConfigJob
-            class="com.b2international.snowowl.datastore.personalization.BookmarksManagerConfigJob"
-            id="com.b2international.snowowl.datastore.personalization.BookmarksManagerConfigJob"
-            terminologyId="UNSPECIFIED">
-      </serviceConfigJob>
-      <serviceConfigJob
             class="com.b2international.snowowl.datastore.CDOBranchManagerConfigJob"
             id="com.b2international.snowowl.datastore.CDOBranchManagerConfigJob"
-            terminologyId="UNSPECIFIED">
-      </serviceConfigJob>
-      <serviceConfigJob
-            class="com.b2international.snowowl.datastore.tasks.TaskStateManagerClientConfigJob"
-            id="com.b2international.snowowl.datastore.tasks.TaskStateManagerConfigJob"
             terminologyId="UNSPECIFIED">
       </serviceConfigJob>
       <serviceConfigJob
@@ -46,11 +32,6 @@
       <serviceConfigJob
             class="com.b2international.snowowl.datastore.remotejobs.RemoteJobClientServiceConfigJob"
             id="com.b2international.snowowl.datastore.remotejobs.RemoteJobClientServiceConfigJob"
-            terminologyId="UNSPECIFIED">
-      </serviceConfigJob>
-      <serviceConfigJob
-            class="com.b2international.snowowl.datastore.index.diff.IndexDifferServiceClientConfigJob"
-            id="com.b2international.snowowl.datastore.index.diff.IndexDifferServiceClientConfigJob"
             terminologyId="UNSPECIFIED">
       </serviceConfigJob>
       <serviceConfigJob
@@ -105,20 +86,6 @@
    </extension>
       <extension
          point="org.eclipse.core.expressions.propertyTesters">
-      <propertyTester
-            class="com.b2international.snowowl.datastore.ActiveBranchPropertyTester"
-            id="com.b2international.snowowl.datastore.ActiveBranchPropertyTester"
-            namespace="com.b2international.snowowl.datastore"
-            properties="activeBranchPropertyTester"
-            type="java.lang.Object">
-      </propertyTester>
-      <propertyTester
-            class="com.b2international.snowowl.datastore.expressions.TaskContextBasedPropertyTester"
-            id="com.b2international.snowowl.datastore.expressions.TaskContextBasedPropertyTester"
-            namespace="com.b2international.snowowl.datastore.expressions"
-            properties="taskContext"
-            type="java.lang.Object">
-      </propertyTester>
       <propertyTester
             class="com.b2international.snowowl.datastore.propertytester.OsPropertyTester"
             id="com.b2international.snowowl.datastore.propertytester.OsPopertyTester"

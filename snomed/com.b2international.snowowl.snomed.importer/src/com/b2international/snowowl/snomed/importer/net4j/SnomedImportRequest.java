@@ -27,9 +27,8 @@ import org.eclipse.net4j.util.io.ExtendedDataOutputStream;
 import org.eclipse.net4j.util.io.IOUtil;
 import org.eclipse.net4j.util.om.monitor.OMMonitor;
 
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRefSetIndexEntry;
-import com.google.common.io.Closeables;
+import com.b2international.snowowl.api.impl.codesystem.domain.CodeSystem;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptDocument;
 
 /**
  * 
@@ -39,33 +38,21 @@ public class SnomedImportRequest extends RequestWithMonitoring<SnomedImportResul
 	private static final int EOF = -1;
 
 	private final String userId;
-	
 	private final ImportConfiguration importConfiguration;
 
-	/**
-	 * 
-	 * @param protocol
-	 * @param importConfiguration
-	 */
 	public SnomedImportRequest(final SnomedImportClientProtocol protocol, final String userId, final ImportConfiguration importConfiguration) {
 		super(protocol, SnomedImportProtocolConstants.SIGNAL_IMPORT_RF2);
 		this.userId = userId;
 		this.importConfiguration = importConfiguration;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.net4j.signal.RequestWithMonitoring#getMonitorTimeoutSeconds()
-	 */
-	@Override protected int getMonitorTimeoutSeconds() {
+	@Override
+	protected int getMonitorTimeoutSeconds() {
 		return 100;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see org.eclipse.net4j.signal.RequestWithMonitoring#requesting(org.eclipse.net4j.util.io.ExtendedDataOutputStream, org.eclipse.net4j.util.om.monitor.OMMonitor)
-	 */
-	@Override protected void requesting(final ExtendedDataOutputStream out, final OMMonitor monitor) throws Exception {
+	@Override
+	protected void requesting(final ExtendedDataOutputStream out, final OMMonitor monitor) throws Exception {
 
 		monitor.begin(1 + 7 + importConfiguration.getRefSetUrls().size());
 		
@@ -75,13 +62,23 @@ public class SnomedImportRequest extends RequestWithMonitoring<SnomedImportResul
 			out.writeUTF(importConfiguration.getBranchPath());
 			out.writeString(userId);
 			out.writeEnum(importConfiguration.getVersion());
-			out.writeString(importConfiguration.getLanguageRefSetId());
 			out.writeBoolean(importConfiguration.isCreateVersions());
 			out.writeInt(importConfiguration.getExcludedRefSetIds().size());
 			
 			for (final String excludedId : importConfiguration.getExcludedRefSetIds()) {
 				out.writeString(excludedId);
 			}
+			
+			final CodeSystem codeSystem = importConfiguration.getCodeSystem();
+			out.writeUTF(codeSystem.getBranchPath());
+			out.writeUTF(codeSystem.getCitation());
+			out.writeUTF(codeSystem.getExtensionOf());
+			out.writeUTF(codeSystem.getIconPath());
+			out.writeUTF(codeSystem.getName());
+			out.writeUTF(codeSystem.getOid());
+			out.writeUTF(codeSystem.getOrganizationLink());
+			out.writeUTF(codeSystem.getPrimaryLanguage());
+			out.writeUTF(codeSystem.getShortName());
 			
 			monitor.worked();
 			
@@ -148,37 +145,20 @@ public class SnomedImportRequest extends RequestWithMonitoring<SnomedImportResul
 	}
 
 	private long getFileSize(final URL componentUrl) throws IOException {
-		InputStream componentStream = null;
-		InputStream bufferedComponentStream = null;
-
-		try {
-			
-			componentStream = componentUrl.openStream();
-			bufferedComponentStream = new BufferedInputStream(componentStream);
-			
-			long size = 0;
-			
-			while (bufferedComponentStream.read() != EOF) {
-				++size;
+		try (InputStream componentStream = componentUrl.openStream()) {
+			try (InputStream bufferedComponentStream = new BufferedInputStream(componentStream)) {
+				long size = 0;
+				while (bufferedComponentStream.read() != EOF) {
+					++size;
+				}
+				return size;
 			}
-			
-			return size;
-			
-		} finally {
-			Closeables.closeQuietly(bufferedComponentStream);
-			Closeables.closeQuietly(componentStream);
 		}
 	}
 	
 	private void writeFileContents(final ExtendedDataOutputStream out, final URL componentUrl) throws IOException {
-		
-		InputStream componentStream = null;
-
-		try {
-			componentStream = componentUrl.openStream();
+		try (InputStream componentStream = componentUrl.openStream()) {
 			IOUtil.copy(componentStream, out, SnomedImportProtocolConstants.BUFFER_SIZE);
-		} finally {
-			Closeables.closeQuietly(componentStream);
 		}
 	}
 
@@ -186,26 +166,22 @@ public class SnomedImportRequest extends RequestWithMonitoring<SnomedImportResul
 	 * (non-Javadoc)
 	 * @see org.eclipse.net4j.signal.RequestWithMonitoring#confirming(org.eclipse.net4j.util.io.ExtendedDataInputStream, org.eclipse.net4j.util.om.monitor.OMMonitor)
 	 */
-	@Override protected SnomedImportResult confirming(final ExtendedDataInputStream in, final OMMonitor monitor) throws Exception {
+	@Override 
+	protected SnomedImportResult confirming(final ExtendedDataInputStream in, final OMMonitor monitor) throws Exception {
 		
 		final int visitedConceptCount = in.readInt();
-		final int visitedRefSetCount = in.readInt();
 		final int validationDefectCount = in.readInt();
 		
-		monitor.begin(visitedConceptCount + visitedRefSetCount + validationDefectCount);
+		monitor.begin(visitedConceptCount + validationDefectCount);
 		
 		try {
 
 			final SnomedImportResult result = new SnomedImportResult();
-			final ClassLoader indexEntryLoader = SnomedConceptIndexEntry.class.getClassLoader();
+			final ClassLoader indexEntryLoader = SnomedConceptDocument.class.getClassLoader();
 			final ClassLoader validationDefectLoader = SnomedValidationDefect.class.getClassLoader();
 			
 			for (int i = 0; i < visitedConceptCount; i++) {
-				result.getVisitedConcepts().add((SnomedConceptIndexEntry) in.readObject(indexEntryLoader));
-			}
-			
-			for (int i = 0; i < visitedRefSetCount; i++) {
-				result.getVisitedRefSets().add((SnomedRefSetIndexEntry) in.readObject(indexEntryLoader));
+				result.getVisitedConcepts().add((SnomedConceptDocument) in.readObject(indexEntryLoader));
 			}
 			
 			for (int i = 0; i < validationDefectCount; i++) {

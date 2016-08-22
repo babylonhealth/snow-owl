@@ -17,24 +17,14 @@ package com.b2international.snowowl.snomed.datastore.index;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.concurrent.atomic.AtomicReference;
 
-import bak.pcj.LongCollection;
-import bak.pcj.map.LongKeyIntMap;
-import bak.pcj.map.LongKeyIntOpenHashMap;
-import bak.pcj.set.LongOpenHashSet;
-import bak.pcj.set.LongSet;
-
+import com.b2international.collections.PrimitiveMaps;
+import com.b2international.collections.PrimitiveSets;
+import com.b2international.collections.longs.LongKeyIntMap;
+import com.b2international.collections.longs.LongSet;
 import com.b2international.commons.CompareUtils;
-import com.b2international.commons.concurrent.equinox.ForkJoinUtils;
-import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBranchPath;
-import com.b2international.snowowl.datastore.BranchPathUtils;
-import com.b2international.snowowl.snomed.SnomedPackage;
 import com.b2international.snowowl.snomed.datastore.IsAStatement;
-import com.b2international.snowowl.snomed.datastore.SnomedStatementBrowser;
-import com.b2international.snowowl.snomed.datastore.SnomedTerminologyBrowser;
-import com.b2international.snowowl.snomed.datastore.StatementCollectionMode;
 import com.google.common.base.Preconditions;
 
 /**
@@ -68,42 +58,32 @@ public class SnomedHierarchy {
 	private final long[] conceptIds;
 	
 	/**
-	 * Creates a view of the concept hierarchy for the currently activated branch.
-	 * @return the new incremental taxonomy builder instance.
-	 */
-	public static SnomedHierarchy forActiveBranch() {
-		return forBranch(BranchPathUtils.createActivePath(SnomedPackage.eINSTANCE));
-	}
-	
-	/**
 	 * Creates a view of the concept hierarchy for the specified branch.
 	 * @param branchPath the branch path.
 	 * @return the new incremental taxonomy builder instance.
 	 */
 	public static SnomedHierarchy forBranch(final IBranchPath branchPath) {
-		
-		final AtomicReference<long[]> conceptIdsReference = new AtomicReference<long[]>();
-		final AtomicReference<IsAStatement[]> statementsReference = new AtomicReference<IsAStatement[]>();
-		
-		final Runnable getConceptsRunnable = new Runnable() {
-			@Override public void run() {
-				final LongCollection conceptIds = ApplicationContext.getInstance().getService(SnomedTerminologyBrowser.class).getAllActiveConceptIds(branchPath);
-				conceptIds.trimToSize();
-				conceptIdsReference.set(conceptIds.toArray());
-			}
-		};
-		
-		final Runnable getStatementsRunnable = new Runnable() {
-			@Override public void run() {
-				final SnomedStatementBrowser statementBrowser = ApplicationContext.getInstance().getService(SnomedStatementBrowser.class);
-				final IsAStatement[] statements = statementBrowser.getActiveStatements(branchPath, StatementCollectionMode.NO_IDS);
-				statementsReference.set(statements);
-			}
-		};
-		
-		ForkJoinUtils.runInParallel(getStatementsRunnable, getConceptsRunnable);
-		return new SnomedHierarchy(conceptIdsReference.get(), statementsReference.get());
-		
+		throw new UnsupportedOperationException("Unsupported API, make it deprecated or remove it if not required by other services");
+//		final AtomicReference<long[]> conceptIdsReference = new AtomicReference<long[]>();
+//		final AtomicReference<IsAStatement[]> statementsReference = new AtomicReference<IsAStatement[]>();
+//		
+//		final Runnable getConceptsRunnable = new Runnable() {
+//			@Override public void run() {
+//				final LongCollection conceptIds = getAllActiveConceptIds(branchPath);
+//				conceptIds.trimToSize();
+//				conceptIdsReference.set(conceptIds.toArray());
+//			}
+//		};
+//		
+//		final Runnable getStatementsRunnable = new Runnable() {
+//			@Override public void run() {
+//				final IsAStatement[] statements = getActiveStatements(branchPath, StatementCollectionMode.NO_IDS);
+//				statementsReference.set(statements);
+//			}
+//		};
+//		
+//		ForkJoinUtils.runInParallel(getStatementsRunnable, getConceptsRunnable);
+//		return new SnomedHierarchy(conceptIdsReference.get(), statementsReference.get());
 	}
 	
 	public SnomedHierarchy(final long[] conceptIds, final IsAStatement[] statements) {
@@ -111,7 +91,7 @@ public class SnomedHierarchy {
 		Preconditions.checkNotNull(conceptIds, "Array of concept IDs argument cannot be null.");
 		Preconditions.checkNotNull(statements, "Array of statements argument cannot be null.");
 	
-		this.conceptIdToInternalId = new LongKeyIntOpenHashMap(conceptIds.length);
+		this.conceptIdToInternalId = PrimitiveMaps.newLongKeyIntOpenHashMapWithExpectedSize(conceptIds.length);
 		this.conceptIds = Arrays.copyOf(conceptIds, conceptIds.length);
 		
 		for (int i = 0; i < conceptIds.length; i++) {
@@ -179,7 +159,7 @@ public class SnomedHierarchy {
 	}
 	
 	public LongSet getRootConceptIds() {
-		final LongSet result = new LongOpenHashSet(roots.length);
+		final LongSet result = PrimitiveSets.newLongOpenHashSetWithExpectedSize(roots.length);
 		for (int i = 0; i < roots.length; i++) {
 			result.add(getConceptId(roots[i]));
 		}
@@ -202,7 +182,7 @@ public class SnomedHierarchy {
 	public LongSet getSubTypeIds(final long conceptId) {
 
 		if (!isActive(conceptId)) {
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 		
 		final int id = getInternalId(conceptId);
@@ -210,10 +190,10 @@ public class SnomedHierarchy {
 		final int[] subtypes = subTypes[id];
 
 		if (CompareUtils.isEmpty(subtypes)) { //guard against lower bound cannot be negative: 0
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 
-		final LongSet $ = new LongOpenHashSet(subtypes.length);
+		final LongSet $ = PrimitiveSets.newLongOpenHashSetWithExpectedSize(subtypes.length);
 
 		for (int i = 0; i < subtypes.length; i++) {
 			$.add(getConceptId(subtypes[i]));
@@ -230,7 +210,7 @@ public class SnomedHierarchy {
 	public LongSet getSuperTypeIds(final long conceptId) {
 
 		if (!isActive(conceptId)) {
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 		
 		final int id = getInternalId(conceptId);
@@ -238,10 +218,10 @@ public class SnomedHierarchy {
 		final int[] supertypes = superTypes[id];
 
 		if (CompareUtils.isEmpty(supertypes)) { //guard against lower bound cannot be negative: 0
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 
-		final LongSet $ = new LongOpenHashSet(supertypes.length);
+		final LongSet $ = PrimitiveSets.newLongOpenHashSetWithExpectedSize(supertypes.length);
 
 		for (int i = 0; i < supertypes.length; i++) {
 			$.add(getConceptId(supertypes[i]));
@@ -258,7 +238,7 @@ public class SnomedHierarchy {
 	public LongSet getAllSubTypesIds(final long conceptId) {
 		
 		if (!isActive(conceptId)) {
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 		
 		final int conceptCount = conceptIdToInternalId.size();
@@ -270,10 +250,10 @@ public class SnomedHierarchy {
 		final int count = subTypeMap.cardinality();
 	
 		if (0 == count) { //guard against lower bound cannot be negative: 0
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 	
-		final LongSet $ = new LongOpenHashSet(count);
+		final LongSet $ = PrimitiveSets.newLongOpenHashSetWithExpectedSize(count);
 		for (int i = subTypeMap.nextSetBit(0); i >= 0; i = subTypeMap.nextSetBit(i + 1)) {
 			$.add(getConceptId(i));
 	
@@ -290,7 +270,7 @@ public class SnomedHierarchy {
 	public LongSet getAllSuperTypeIds(final long conceptId) {
 		
 		if (!isActive(conceptId)) {
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 		
 		final int conceptCount = conceptIdToInternalId.size();
@@ -302,10 +282,10 @@ public class SnomedHierarchy {
 		final int count = superTypeMap.cardinality();
 	
 		if (0 == count) { //guard against lower bound cannot be negative: 0
-			return new LongOpenHashSet();
+			return PrimitiveSets.newLongOpenHashSet();
 		}
 	
-		final LongSet $ = new LongOpenHashSet(count);
+		final LongSet $ = PrimitiveSets.newLongOpenHashSetWithExpectedSize(count);
 		for (int i = superTypeMap.nextSetBit(0); i >= 0; i = superTypeMap.nextSetBit(i + 1)) {
 			$.add(getConceptId(i));
 	

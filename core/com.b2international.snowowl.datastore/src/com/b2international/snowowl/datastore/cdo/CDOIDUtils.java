@@ -27,10 +27,9 @@ import org.eclipse.emf.cdo.common.id.CDOID;
 import org.eclipse.emf.cdo.common.id.CDOIDUtil;
 import org.eclipse.emf.cdo.common.revision.CDOIDAndVersion;
 
-import bak.pcj.LongCollection;
-import bak.pcj.LongIterator;
-
-import com.b2international.commons.pcj.LongSets.InverseLongFunction;
+import com.b2international.collections.longs.LongCollection;
+import com.b2international.collections.longs.LongIterator;
+import com.b2international.commons.collect.LongSets.InverseLongFunction;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
@@ -71,7 +70,7 @@ public abstract class CDOIDUtils {
 		};
 	};
 	
-	private static final Function<CDOID, Long> CDO_ID_TO_LONG_FUNCTION = new Function<CDOID, Long>() {
+	public static final Function<CDOID, Long> CDO_ID_TO_LONG_FUNCTION = new Function<CDOID, Long>() {
 		public Long apply(final CDOID id) {
 			return CDOIDUtils.asLong(id);
 		};

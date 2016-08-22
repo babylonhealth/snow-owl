@@ -96,8 +96,7 @@ public class SnomedBrowserApiTest extends AbstractSnomedApiTest {
 		final ImmutableList<?> relationships = createIsaRelationship(ROOT_CONCEPT, MODULE_SCT_CORE, creationDate);
 		final Map<?, ?> requestBody = givenConceptRequestBody(conceptId, true, fsn, MODULE_SCT_CORE, descriptions, relationships,
 				creationDate);
-		assertComponentCreatedWithStatus(createMainPath(), requestBody, 400).and().body("message", equalTo(
-				"The concept in the request body should not have an ID when creating. When performing an update include the concept ID in the URL."));
+		assertComponentCreatedWithStatus(createMainPath(), requestBody, 200);
 	}
 
 	@Test
@@ -152,9 +151,8 @@ public class SnomedBrowserApiTest extends AbstractSnomedApiTest {
 		final Map<String, Object> concept = response.and().extract().as(Map.class);
 		concept.remove("relationships");
 
-		// XXX when deleting all relationships of a concept, the concept will be deleted too as a side effect,
-		// therefore we get 404 when trying to get the updated concept
-		assertComponentUpdatedWithStatus(createMainPath(), concept.get("conceptId").toString(), concept, 404);
+		// when deleting all relationships of a concept, the concept should not be deleted
+		assertComponentUpdatedWithStatus(createMainPath(), concept.get("conceptId").toString(), concept, 200);
 	}
 
 }

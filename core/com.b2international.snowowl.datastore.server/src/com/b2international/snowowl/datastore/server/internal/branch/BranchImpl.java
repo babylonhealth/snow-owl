@@ -27,6 +27,7 @@ import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.branch.BranchMergeException;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.datastore.BranchPathUtils;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * @since 4.1
@@ -69,6 +70,7 @@ public class BranchImpl extends MetadataHolderImpl implements Branch, InternalBr
 		this.branchManager = checkNotNull(branchManager, "branchManager");
 	}
 	
+    @JsonIgnore
 	BranchManagerImpl getBranchManager() {
 		return this.branchManager;
 	}
@@ -145,18 +147,14 @@ public class BranchImpl extends MetadataHolderImpl implements Branch, InternalBr
 			throw new BadRequestException("Can't merge branch '%s' onto itself.", path());
 		}
 		
-		if (changesFrom.state() == BranchState.FORWARD) {
+		final BranchState changesFromState = changesFrom.state();
+		if (changesFromState == BranchState.FORWARD) {
 			return branchManager.merge((BranchImpl) changesFrom, this, commitMessage);
 		} else {
-			throw new BranchMergeException("Only source in the FORWARD state can merged.");
+			throw new BranchMergeException("Branch %s should be in FORWARD state to be merged into %s. It's currently %s", changesFrom.path(), path(), changesFromState);
 		}
 	}
 
-	@Override
-	public Branch applyChangeSet(Branch source, boolean dryRun, String commitMessage) {
-		return branchManager.applyChangeSet((InternalBranch) source, this, dryRun, commitMessage);
-	}
-	
 	@Override
 	public Branch notifyChanged() {
 		return branchManager.sendChangeEvent(this);

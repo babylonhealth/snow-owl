@@ -25,7 +25,6 @@ import java.util.Set;
 import org.eclipse.emf.common.util.ECollections;
 import org.eclipse.emf.common.util.EList;
 
-import com.b2international.snowowl.core.api.browser.IClientTerminologyBrowser;
 import com.b2international.snowowl.dsl.scg.Attribute;
 import com.b2international.snowowl.dsl.scg.AttributeValue;
 import com.b2international.snowowl.dsl.scg.Concept;
@@ -34,8 +33,7 @@ import com.b2international.snowowl.dsl.scg.Group;
 import com.b2international.snowowl.dsl.scg.ScgFactory;
 import com.b2international.snowowl.semanticengine.utils.AttributeCollectionComparator;
 import com.b2international.snowowl.semanticengine.utils.SemanticUtils;
-import com.b2international.snowowl.snomed.datastore.SnomedClientStatementBrowser;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptDocument;
 import com.google.common.collect.Ordering;
 
 /**
@@ -44,12 +42,10 @@ import com.google.common.collect.Ordering;
  */
 public class ScgExpressionNormalFormGenerator implements ExpressionNormalFormGenerator {
 	
-	private final IClientTerminologyBrowser<SnomedConceptIndexEntry, String> terminologyBrowser;
-	private final SnomedClientStatementBrowser statementBrowser;
+	private final String branchPath;
 
-	public ScgExpressionNormalFormGenerator(IClientTerminologyBrowser<SnomedConceptIndexEntry, String> terminologyBrowser, SnomedClientStatementBrowser statementBrowser) {
-		this.terminologyBrowser = terminologyBrowser;
-		this.statementBrowser = statementBrowser;
+	public ScgExpressionNormalFormGenerator(String branchPath) {
+		this.branchPath = branchPath;
 	}
 
 	/**
@@ -58,18 +54,18 @@ public class ScgExpressionNormalFormGenerator implements ExpressionNormalFormGen
 	public Expression getLongNormalForm(Expression originalExpression) {
 		// expression focus concepts	
 		Collection<Concept> focusConcepts = originalExpression.getConcepts();
-		FocusConceptNormalizer focusConceptNormalizer = new FocusConceptNormalizer(terminologyBrowser, statementBrowser);
+		FocusConceptNormalizer focusConceptNormalizer = new FocusConceptNormalizer(branchPath);
 		FocusConceptNormalizationResult normalizedFocusConcepts = focusConceptNormalizer.normalizeFocusConcepts(focusConcepts);
 		
 		// expression refinements
 		List<Group> expressionAttributeGroups = originalExpression.getGroups();
 		List<Attribute> expressionUngroupedAttributes = originalExpression.getAttributes();
-		AttributeNormalizer attributeNormalizer = new AttributeNormalizer(terminologyBrowser, statementBrowser);
+		AttributeNormalizer attributeNormalizer = new AttributeNormalizer(branchPath);
 		ConceptDefinition normalizedExpressionRefinements = attributeNormalizer.normalizeAttributes(expressionAttributeGroups, 
 				expressionUngroupedAttributes);
 		
 		// merge refinements
-		RefinementsMerger refinementsMerger = new RefinementsMerger(terminologyBrowser);
+		RefinementsMerger refinementsMerger = new RefinementsMerger(branchPath);
 		ConceptDefinition mergedRefinements = refinementsMerger.mergeRefinements(normalizedFocusConcepts, normalizedExpressionRefinements);
 		
 		// create expression
@@ -174,7 +170,7 @@ public class ScgExpressionNormalFormGenerator implements ExpressionNormalFormGen
 	
 	private void deriveShortNormalFormNoRecursion(Expression expression) {
 		Collection<Concept> primitiveFocusConcepts = expression.getConcepts();
-		FocusConceptNormalizer focusConceptNormalizer = new FocusConceptNormalizer(terminologyBrowser, statementBrowser);
+		FocusConceptNormalizer focusConceptNormalizer = new FocusConceptNormalizer(branchPath);
 		FocusConceptNormalizationResult normalizationResult = focusConceptNormalizer.normalizeFocusConcepts(primitiveFocusConcepts);
 		
 		/* 5.5.1.3	Removed redundant attributes and groups
@@ -210,16 +206,16 @@ public class ScgExpressionNormalFormGenerator implements ExpressionNormalFormGen
 		attributes.addAll(SemanticUtils.getAttributes(expression.getGroups()));
 		attributes.addAll(expression.getAttributes());
 		for (Iterator<Attribute> attributeIterator = attributes.iterator(); attributeIterator.hasNext();) {
-			Attribute attribute = (Attribute) attributeIterator.next();
+			Attribute attribute = attributeIterator.next();
 			if (!(attribute.getValue() instanceof Expression))
 				attributeIterator.remove();
 		}
 		return attributes;
 	}
 	
-	private Collection<Concept> wrapConceptMinis(Collection<SnomedConceptIndexEntry> filteredPrimitiveSuperTypes) {
+	private Collection<Concept> wrapConceptMinis(Collection<SnomedConceptDocument> filteredPrimitiveSuperTypes) {
 		List<Concept> concepts = new ArrayList<Concept>();
-		for (SnomedConceptIndexEntry conceptMini : filteredPrimitiveSuperTypes) {
+		for (SnomedConceptDocument conceptMini : filteredPrimitiveSuperTypes) {
 			Concept concept = ScgFactory.eINSTANCE.createConcept();
 			concept.setId(conceptMini.getId());
 			concepts.add(concept);

@@ -67,7 +67,7 @@ public abstract class AbstractSnomedDsvExportItem {
 		switch (type) {
 			case DESCRIPTION:
 			case RELATIONSHIP:
-				final long componentId = inputStream.readLong();
+				final String componentId = inputStream.readUTF();
 				return new ComponentIdSnomedDsvExportItem(type, componentId);
 
 			case DATAYPE:

@@ -18,43 +18,28 @@ package com.b2international.snowowl.snomed.exporter.model;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
-import com.b2international.snowowl.core.ApplicationContext;
-import com.b2international.snowowl.datastore.BranchPathUtils;
-import com.b2international.snowowl.snomed.SnomedPackage;
-import com.b2international.snowowl.snomed.datastore.services.ISnomedConceptNameProvider;
-
-/**
- * 
- */
 public class ComponentIdSnomedDsvExportItem extends AbstractSnomedDsvExportItem {
 
-	private final long componentId;
+	private final String componentId;
 	
-	public ComponentIdSnomedDsvExportItem(final SnomedDsvExportItemType type, final long componentId) {
+	public ComponentIdSnomedDsvExportItem(final SnomedDsvExportItemType type, final String componentId) {
 		super(type);
 		this.componentId = componentId;
 	}
 	
-	public long getComponentId() {
+	public String getComponentId() {
 		return componentId;
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.snomed.exporter.model.AbstractSnomedDsvExportItem#writeToOutputStream(java.io.DataOutputStream)
-	 */
 	@Override
 	public void writeToOutputStream(DataOutputStream outputStream) throws IOException {
 		super.writeToOutputStream(outputStream);
-		outputStream.writeLong(componentId);
+		outputStream.writeUTF(componentId);
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.snomed.exporter.model.AbstractSnomedDsvExportItem#getDisplayName()
-	 */
 	@Override
 	public String getDisplayName() {
-		// FIXME: Any way to get to the branch path here?
-		return ApplicationContext.getServiceForClass(ISnomedConceptNameProvider.class)
-				.getComponentLabel(BranchPathUtils.createActivePath(SnomedPackage.eINSTANCE), String.valueOf(getComponentId()));
+		// TODO fix labels, this should not be part of the item, labels should be computed on a higher level
+		return getComponentId();
 	}
 }

@@ -17,12 +17,14 @@ package com.b2international.snowowl.snomed.importer.rf2.refset;
 
 import java.io.InputStream;
 import java.text.MessageFormat;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.core.runtime.SubMonitor;
 
+import com.b2international.index.query.Expression;
 import com.b2international.snowowl.core.ComponentIdentifierPair;
 import com.b2international.snowowl.importer.ImportAction;
 import com.b2international.snowowl.importer.ImportException;
@@ -33,6 +35,8 @@ import com.b2international.snowowl.snomed.common.SnomedTerminologyComponentConst
 import com.b2international.snowowl.snomed.datastore.SnomedEditingContext;
 import com.b2international.snowowl.snomed.datastore.SnomedRefSetEditingContext;
 import com.b2international.snowowl.snomed.datastore.SnomedRefSetLookupService;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDocument;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRefSetMemberIndexEntry;
 import com.b2international.snowowl.snomed.importer.rf2.csv.AbstractRefSetRow;
 import com.b2international.snowowl.snomed.importer.rf2.model.AbstractSnomedImporter;
 import com.b2international.snowowl.snomed.importer.rf2.model.SnomedImportConfiguration;
@@ -59,6 +63,16 @@ public abstract class AbstractSnomedRefSetImporter<T extends AbstractRefSetRow, 
 		return getImportContext().getEditingContext().getRefSetEditingContext();
 	}
 
+	@Override
+	protected Expression getAvailableComponentQuery() {
+		return SnomedRefSetMemberIndexEntry.Expressions.refSetTypes(Collections.singleton(getRefSetType()));
+	}
+	
+	@Override
+	protected final Class<? extends SnomedDocument> getType() {
+		return SnomedRefSetMemberIndexEntry.class;
+	}
+	
 	@Override
 	protected void importRow(final T currentRow) {
 		
@@ -127,7 +141,7 @@ public abstract class AbstractSnomedRefSetImporter<T extends AbstractRefSetRow, 
 							Concepts.SYNONYM)); //synonym description type
 			
 			//attempt to create proper language type reference set members for the concept
-			final String languageRefSetId = getImportContext().getLanguageRefSetId();
+			String languageRefSetId = editingContext.getLanguageRefSetId();
 			final SnomedRefSet languageRefSet = new SnomedRefSetLookupService().getComponent(languageRefSetId, editingContext.getTransaction());
 			
 			if (languageRefSet instanceof SnomedStructuralRefSet) {

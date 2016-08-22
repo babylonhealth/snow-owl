@@ -15,13 +15,9 @@
  */
 package com.b2international.snowowl.snomed.exporter.model;
 
-import static com.b2international.commons.collections.Collections3.forEach;
-import static com.b2international.snowowl.core.ApplicationContext.getServiceForClass;
-import static com.b2international.snowowl.core.api.ComponentUtils.getIds;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.Date;
 import java.util.Set;
 
@@ -30,18 +26,16 @@ import javax.annotation.Nullable;
 import org.eclipse.net4j.util.StringUtil;
 
 import com.b2international.commons.StringUtils;
-import com.b2international.commons.collections.Procedure;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.date.Dates;
-import com.b2international.snowowl.datastore.BranchPathUtils;
-import com.b2international.snowowl.datastore.cdo.ICDOConnection;
 import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
-import com.b2international.snowowl.snomed.SnomedPackage;
+import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.common.ContentSubType;
+import com.b2international.snowowl.snomed.core.domain.refset.SnomedReferenceSet;
+import com.b2international.snowowl.snomed.core.domain.refset.SnomedReferenceSets;
 import com.b2international.snowowl.snomed.datastore.SnomedMapSetSetting;
-import com.b2international.snowowl.snomed.datastore.SnomedModuleDependencyRefSetMemberFragment;
-import com.b2international.snowowl.snomed.datastore.SnomedRefSetBrowser;
+import com.b2international.snowowl.snomed.datastore.request.SnomedRequests;
 import com.b2international.snowowl.snomed.datastore.services.ISnomedConceptNameProvider;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -65,7 +59,7 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 	private boolean refSetsToExport;
 	private boolean exportToRf1;
 	private boolean extendedDescriptionTypesForRf1;
-	private boolean deltaExport;
+	private boolean includeUnpublised;
 
 	private Date deltaExportStartEffectiveTime;
 	private Date deltaExportEndEffectiveTime;
@@ -74,9 +68,8 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 	private Set<String> modulesToExport;
 
 	private String namespace;
-	private IBranchPath clientBranch;
+	private final IBranchPath branch;
 	private String userId;
-	private Collection<SnomedModuleDependencyRefSetMemberFragment> moduleDependencyMembers;
 	private String unsetEffectiveTimeLabel;
 
 	/**
@@ -92,14 +85,18 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 		checkNotNull(contentSubType, "contentSubType");
 		checkNotNull(branchPath, "branchPath");
 		
-		final SnomedRf2ExportModel model = new SnomedRf2ExportModel();
+		final SnomedRf2ExportModel model = new SnomedRf2ExportModel(branchPath);
 		model.releaseType = contentSubType;
-		model.clientBranch = branchPath;
-		forEach(getIds(getServiceForClass(SnomedRefSetBrowser.class).getAllReferenceSets(branchPath)), new Procedure<String>() {
-			protected void doApply(final String refSetId) {
-				model.updateRefSet(refSetId);
-			}
-		});
+		
+		final SnomedReferenceSets referenceSets = SnomedRequests.prepareSearchRefSet()
+			.all()
+			.build(branchPath.getPath())
+			.execute(ApplicationContext.getServiceForClass(IEventBus.class))
+			.getSync();
+		for (SnomedReferenceSet refSet : referenceSets) {
+			model.updateRefSet(refSet.getId());
+		}
+		
 		return model;
 	}
 	
@@ -113,29 +110,26 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 	 */
 	public static SnomedRf2ExportModel createExportModelForSingleRefSet(final String refSetId, 
 			final ContentSubType contentSubType, final IBranchPath branchPath) {
-		
 		checkNotNull(contentSubType, "contentSubType");
-		checkNotNull(branchPath, "branchPath");
 		checkNotNull(refSetId, "refSetId");
 		
-		final SnomedRf2ExportModel model = new SnomedRf2ExportModel(refSetId);
+		final SnomedRf2ExportModel model = new SnomedRf2ExportModel(branchPath, refSetId);
 		model.releaseType = contentSubType;
-		model.clientBranch = branchPath;
 		return model;
 	}
 	
 	/**
 	 * Creates a new model instance for core export.
 	 */
-	public SnomedRf2ExportModel() {
-		this(null);
+	public SnomedRf2ExportModel(IBranchPath branch) {
+		this(branch, null);
 	}
 
 	/**
 	 * Creates a new model instance.
 	 * @param refSetId
 	 */
-	public SnomedRf2ExportModel(@Nullable final String refSetId) {
+	public SnomedRf2ExportModel(final IBranchPath branch, @Nullable final String refSetId) {
 		super();
 		refSetIds = StringUtils.isEmpty(refSetId) ? Sets.<String> newHashSet() : Sets.newHashSet(refSetId);
 		singleRefSetExport = !refSetIds.isEmpty();
@@ -144,8 +138,7 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 		settings = Sets.newHashSet();
 		refSetsToExport = true;
 		modulesToExport = Sets.newHashSet();
-		final ICDOConnection connection = ApplicationContext.getInstance().getService(ICDOConnectionManager.class).get(SnomedPackage.eINSTANCE);
-		clientBranch = BranchPathUtils.createActivePath(connection.getUuid());
+		this.branch = checkNotNull(branch, "branch");
 		userId = ApplicationContext.getInstance().getService(ICDOConnectionManager.class).getUserId();
 		unsetEffectiveTimeLabel = "";
 		setExportPath(initExportPath());
@@ -201,7 +194,7 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 		if (!singleRefSetExport) {
 			token = new StringBuilder().append("SnomedCT_Release_INT_").append(Dates.formatByHostTimeZone(new Date(), "yyyyMMdd-HHmm")).toString();
 		} else {
-			token = StringUtil.capAll(ApplicationContext.getServiceForClass(ISnomedConceptNameProvider.class).getComponentLabel(clientBranch, Iterables.getOnlyElement(refSetIds)));
+			token = StringUtil.capAll(ApplicationContext.getServiceForClass(ISnomedConceptNameProvider.class).getComponentLabel(branch, Iterables.getOnlyElement(refSetIds)));
 		}
 		final StringBuilder sb = new StringBuilder();
 		return sb.append(System.getProperty("user.home")).append(File.separatorChar).append(token).append(".zip").toString();
@@ -251,12 +244,12 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 		this.deltaExportEndEffectiveTime = deltaExportEndEffectiveTime;
 	}
 
-	public boolean isDeltaExport() {
-		return deltaExport;
+	public boolean includeUnpublised() {
+		return includeUnpublised;
 	}
 
-	public void setDeltaExport(boolean isDeltaExport) {
-		this.deltaExport = isDeltaExport;
+	public void setIncludeUnpublised(boolean includeUnpublised) {
+		this.includeUnpublised = includeUnpublised;
 	}
 
 	public void setNamespace(String namespace) {
@@ -268,21 +261,13 @@ public final class SnomedRf2ExportModel extends SnomedExportModel {
 	}
 
 	public IBranchPath getClientBranch() {
-		return clientBranch;
+		return branch;
 	}
 
 	public String getUserId() {
 		return userId;
 	}
 
-	public void setModuleDependencies(final Collection<SnomedModuleDependencyRefSetMemberFragment> moduleDependencyMembers) {
-		this.moduleDependencyMembers = moduleDependencyMembers;
-	}
-	
-	public Collection<SnomedModuleDependencyRefSetMemberFragment> getModuleDependencyMembers() {
-		return moduleDependencyMembers;
-	}
-	
 	public String getUnsetEffectiveTimeLabel() {
 		return unsetEffectiveTimeLabel;
 	}

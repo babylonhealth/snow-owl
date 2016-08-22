@@ -15,8 +15,8 @@
  */
 package com.b2international.snowowl.core;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.nullToEmpty;
+import static com.google.common.collect.Sets.newHashSet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -235,31 +235,24 @@ public class CoreTerminologyBroker {
 			return classes;
 		}
 
-		final String componentId = getTerminologyComponentId(terminologyComponentId);
-
-		for (final IConfigurationElement element : Platform.getExtensionRegistry().getConfigurationElementsFor(REPRESENTATION_EXTENSION_POINT_ID)) {
-
-			if (componentId.equals(String.valueOf(element.getAttribute(TERMINOLOGY_COMPONENT_ID_ATTRIBUTE)))) {
-
-				final String representationClass = element.getAttribute(CLASS_ATTRIBUTE);
-				SHORT_TO_CLASS_CACHE.put(terminologyComponentId, representationClass);
-
-			}
-
+		final Set<String> representationClasses = getClassesForComponentId(getTerminologyComponentId(terminologyComponentId));
+		
+		for (String representationClass : representationClasses) {
+			SHORT_TO_CLASS_CACHE.put(terminologyComponentId, representationClass);
 		}
-
 		return SHORT_TO_CLASS_CACHE.get(terminologyComponentId);
 	}
 
-	/*
-	 * TODO (apeteri): This method should be moved to the datastore bundle. It requires knowledge of a BranchPathMap which is not available in core.
-	 */
-	public IComponent<?> getComponent(final ComponentIdentifierPair<?> pair) {
-		checkNotNull(pair, "Component identifier pair argument cannot be null.");
-		
-		final String terminologyComponentId = pair.getTerminologyComponentId();
-		final ILookupService<String, ?, ?> lookupService = getLookupService(terminologyComponentId);
-		return lookupService.getComponent(String.valueOf(pair.getComponentId()));
+	public synchronized Set<String> getClassesForComponentId(final String componentId) {
+		final Set<String> representationClasses = newHashSet();
+		for (final IConfigurationElement element : Platform.getExtensionRegistry().getConfigurationElementsFor(REPRESENTATION_EXTENSION_POINT_ID)) {
+
+			if (componentId.equals(String.valueOf(element.getAttribute(TERMINOLOGY_COMPONENT_ID_ATTRIBUTE)))) {
+				representationClasses.add(element.getAttribute(CLASS_ATTRIBUTE));
+			}
+
+		}
+		return representationClasses;
 	}
 
 	public String getTerminologyComponentId(final Object object) {

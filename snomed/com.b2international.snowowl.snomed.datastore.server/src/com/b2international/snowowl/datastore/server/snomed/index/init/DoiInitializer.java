@@ -25,10 +25,9 @@ import org.eclipse.core.runtime.NullProgressMonitor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bak.pcj.map.LongKeyFloatMap;
-import bak.pcj.map.LongKeyFloatOpenHashMap;
-
-import com.b2international.snowowl.core.api.index.IndexException;
+import com.b2international.collections.PrimitiveMaps;
+import com.b2international.collections.longs.LongKeyFloatMap;
+import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.datastore.server.snomed.SnomedDatastoreServerActivator;
 import com.google.common.base.Preconditions;
 
@@ -58,7 +57,7 @@ public class DoiInitializer {
 			
 			final int size = dis.readInt();
 			
-			final LongKeyFloatMap data = size > 0 ? new LongKeyFloatOpenHashMap(size) : new LongKeyFloatOpenHashMap();
+			final LongKeyFloatMap data = size > 0 ? PrimitiveMaps.newLongKeyFloatOpenHashMapWithExpectedSize(size) : PrimitiveMaps.newLongKeyFloatOpenHashMap();
 			
 			for (int i = 0; i < size; i++) {
 				
@@ -75,7 +74,7 @@ public class DoiInitializer {
 			
 			LOGGER.warn("Failed to collect usage data for concept documents. Falling back to default degree of interest values.");
 			
-			return new LongKeyFloatOpenHashMap();
+			return PrimitiveMaps.newLongKeyFloatOpenHashMap();
 			
 		} finally {
 			
@@ -87,8 +86,8 @@ public class DoiInitializer {
 					try {
 						is.close();
 					} catch (final IOException e1) {
+						throw new SnowowlRuntimeException("Error while closing DOI resource file stream.", e);
 					}
-					throw new IndexException("Error while closing DOI resource file stream.", e);
 				}
 				
 			}

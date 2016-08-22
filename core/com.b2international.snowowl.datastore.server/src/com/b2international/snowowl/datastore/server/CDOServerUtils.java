@@ -75,9 +75,8 @@ import org.eclipse.net4j.util.om.monitor.OMMonitor.Async;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bak.pcj.list.LongArrayList;
-import bak.pcj.list.LongList;
-
+import com.b2international.collections.PrimitiveLists;
+import com.b2international.collections.longs.LongList;
 import com.b2international.commons.CompareUtils;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
@@ -378,7 +377,7 @@ public abstract class CDOServerUtils {
 		//try to find the first revision
 		if (emptyOrNullRevision(revisions)) {
 	
-			final LongList commitTimestamps = new LongArrayList();
+			final LongList commitTimestamps = PrimitiveLists.newLongArrayList();
 			
 			((CommitInfoLoader) getAccessor(cdoId)).loadCommitInfos(
 					branchPoint.getBranch(), //branch 
@@ -610,6 +609,28 @@ public abstract class CDOServerUtils {
 		}
 	}
 
+	/**
+	 * Wraps the specified {@link Runnable} into another one that manages the thread-local store accessor, unsetting it when the wrapped runnable
+	 * completes.
+	 * 
+	 * @param runnable
+	 * @param accessor
+	 * @return
+	 */
+	public static Runnable withAccessor(final Runnable runnable, final IStoreAccessor accessor) {
+		return new Runnable() {
+			@Override
+			public void run() {
+				try {
+					StoreThreadLocal.setAccessor(accessor);
+					runnable.run();
+				} finally {
+					StoreThreadLocal.setAccessor(null);
+				}
+			}
+		};
+	}
+	
 	/**Returns with the store accessor for a given repository.<br>Never {@code null}.*/
 	public static IStoreAccessor getAccessorByUuid(final String uuid) {
 		return Preconditions.checkNotNull(getDbStoreByUuid(uuid).getWriter(null), "Store accessor was null for repository: " + uuid);

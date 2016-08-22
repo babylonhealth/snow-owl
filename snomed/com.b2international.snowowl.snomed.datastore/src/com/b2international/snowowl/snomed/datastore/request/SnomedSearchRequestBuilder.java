@@ -17,9 +17,13 @@ package com.b2international.snowowl.snomed.datastore.request;
 
 import static com.google.common.collect.Lists.newArrayList;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import com.b2international.commons.CompareUtils;
 import com.b2international.commons.http.ExtendedLocale;
+import com.b2international.snowowl.core.date.DateFormats;
+import com.b2international.snowowl.core.date.EffectiveTimes;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.datastore.request.SearchRequestBuilder;
 import com.b2international.snowowl.snomed.SnomedConstants.LanguageCodeReferenceSetIdentifierMapping;
@@ -42,12 +46,29 @@ public abstract class SnomedSearchRequestBuilder<B extends SnomedSearchRequestBu
 		return addOption(OptionKey.ACTIVE, active);
 	}
 
-	public final B filterByLanguageRefSetIds(List<Long> languageRefSetIds) {
+	public final B filterByLanguageRefSetIds(List<String> languageRefSetIds) {
 		return addOption(OptionKey.LANGUAGE_REFSET, languageRefSetIds);
 	}
 	
+	public final B filterByEffectiveTime(String effectiveTime) {
+		if (CompareUtils.isEmpty(effectiveTime)) {
+			return getSelf(); 
+		} else {
+			return filterByEffectiveTime(EffectiveTimes.parse(effectiveTime, DateFormats.SHORT).getTime());
+		}
+	}
+	
+	public final B filterByEffectiveTime(long effectiveTime) {
+		return filterByEffectiveTime(effectiveTime, effectiveTime);
+	}
+	
+	public final B filterByEffectiveTime(long from, long to) {
+		return addOption(OptionKey.EFFECTIVE_TIME_START, from).addOption(OptionKey.EFFECTIVE_TIME_END, to);
+	}
+	
 	public final B filterByExtendedLocales(List<ExtendedLocale> locales) {
-		final List<Long> languageRefSetIds = newArrayList();
+		final List<String> languageRefSetIds = newArrayList();
+		final List<ExtendedLocale> unconvertableLocales = new ArrayList<ExtendedLocale>();
 		for (ExtendedLocale extendedLocale : locales) {
 			final String languageRefSetId;
 			
@@ -58,10 +79,14 @@ public abstract class SnomedSearchRequestBuilder<B extends SnomedSearchRequestBu
 			}
 			
 			if (languageRefSetId == null) {
-				throw new BadRequestException("Don't know how to convert extended locale " + extendedLocale.toString() + " to a language reference set identifier.");
+				unconvertableLocales.add(extendedLocale);
 			} else {
-				languageRefSetIds.add(Long.valueOf(languageRefSetId));
+				languageRefSetIds.add(languageRefSetId);
 			}
+		}
+		
+		if (languageRefSetIds.isEmpty() && !unconvertableLocales.isEmpty()) {
+			throw new BadRequestException("Don't know how to convert extended locale " + unconvertableLocales.get(0).toString() + " to a language reference set identifier.");
 		}
 		
 		return filterByLanguageRefSetIds(languageRefSetIds).setLocales(locales);

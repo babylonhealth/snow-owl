@@ -109,6 +109,10 @@ public class SnomedReferenceSetMemberRestService extends AbstractSnomedRestServi
 			@RequestParam(value="module", required=false) 
 			final String moduleFilter,
 			
+			@ApiParam(value="The effective time to match (yyyyMMdd, exact matches only)")
+			@RequestParam(value="effectiveTimeFilter", required=false) 
+			final String effectiveTimeFilter,
+			
 			@ApiParam(value="The target component identifier(s) to match in case of association refset members")
 			@RequestParam(value="targetComponent", required=false)
 			// TODO figure out how to dynamically include query params with swagger, or just replace swagger with a better alternative???
@@ -147,6 +151,7 @@ public class SnomedReferenceSetMemberRestService extends AbstractSnomedRestServi
 				.filterByReferencedComponent(referencedComponentId)
 				.filterByActive(activeFilter)
 				.filterByModule(moduleFilter)
+				.filterByEffectiveTime(effectiveTimeFilter)
 				.setExpand(expand)
 				.setLocales(extendedLocales);
 		
@@ -261,10 +266,15 @@ public class SnomedReferenceSetMemberRestService extends AbstractSnomedRestServi
 			@PathVariable(value="id")
 			final String memberId,
 			
+			@ApiParam(value="Force deletion flag")
+			@RequestParam(defaultValue="false", required=false)
+			final Boolean force,
+			
 			final Principal principal) {
 		SnomedRequests
 			.prepareDeleteMember()
 			.setComponentId(memberId)
+			.force(force)
 			.build(principal.getName(), branchPath, String.format("Deleted reference set member '%s' from store.", memberId))
 			.executeSync(bus, 120L * 1000L);
 	}
@@ -295,6 +305,10 @@ public class SnomedReferenceSetMemberRestService extends AbstractSnomedRestServi
 			@RequestBody 
 			final ChangeRequest<SnomedMemberRestUpdate> body,
 			
+			@ApiParam(value="Force update flag")
+			@RequestParam(defaultValue="false", required=false)
+			final Boolean force,
+			
 			final Principal principal) {
 		
 		final String userId = principal.getName();
@@ -303,6 +317,7 @@ public class SnomedReferenceSetMemberRestService extends AbstractSnomedRestServi
 			.prepareUpdateMember()
 			.setMemberId(memberId)
 			.setSource(update.getSource())
+			.force(force)
 			.build(userId, branchPath, body.getCommitComment())
 			.executeSync(bus, 120L * 1000L);
 	}

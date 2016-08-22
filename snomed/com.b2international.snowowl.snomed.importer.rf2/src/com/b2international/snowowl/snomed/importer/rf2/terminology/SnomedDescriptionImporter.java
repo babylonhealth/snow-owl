@@ -23,9 +23,13 @@ import org.supercsv.cellprocessor.NullObjectPattern;
 import org.supercsv.cellprocessor.ParseBool;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 
+import com.b2international.snowowl.core.date.DateFormats;
+import com.b2international.snowowl.core.date.EffectiveTimes;
 import com.b2international.snowowl.snomed.Description;
 import com.b2international.snowowl.snomed.SnomedFactory;
 import com.b2international.snowowl.snomed.common.SnomedRf2Headers;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDescriptionIndexEntry;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDocument;
 import com.b2international.snowowl.snomed.importer.rf2.csv.DescriptionRow;
 import com.b2international.snowowl.snomed.importer.rf2.model.ComponentImportType;
 import com.b2international.snowowl.snomed.importer.rf2.model.IndexConfiguration;
@@ -67,6 +71,11 @@ public class SnomedDescriptionImporter extends AbstractSnomedTerminologyImporter
 	public SnomedDescriptionImporter(final SnomedImportContext importContext, final InputStream releaseFileStream, final String releaseFileIdentifier, final ComponentImportType type) {
 		super(createImportConfiguration(type), importContext, releaseFileStream, releaseFileIdentifier);
 	}
+	
+	@Override
+	protected Class<? extends SnomedDocument> getType() {
+		return SnomedDescriptionIndexEntry.class;
+	}
 
 	@Override
 	protected void importRow(final DescriptionRow currentRow) {
@@ -74,6 +83,10 @@ public class SnomedDescriptionImporter extends AbstractSnomedTerminologyImporter
 		final Description editedDescription = getOrCreateComponent(currentRow.getConceptId(), currentRow.getId());
 		
 		if (skipCurrentRow(currentRow, editedDescription)) {
+			getLogger().warn("Not importing concept '{}' with effective time '{}'; it should have been filtered from the input file.",
+					currentRow.getId(), 
+					EffectiveTimes.format(currentRow.getEffectiveTime(), DateFormats.SHORT));
+
 			return;
 		}
 

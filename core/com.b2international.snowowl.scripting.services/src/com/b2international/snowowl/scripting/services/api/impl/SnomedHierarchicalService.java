@@ -16,22 +16,29 @@
 package com.b2international.snowowl.scripting.services.api.impl;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import com.b2international.snowowl.core.ApplicationContext;
+import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.scripting.services.api.IHierarchicalService;
 import com.b2international.snowowl.semanticengine.simpleast.subsumption.SubsumptionTester;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
-import com.b2international.snowowl.snomed.datastore.SnomedClientStatementBrowser;
-import com.b2international.snowowl.snomed.datastore.SnomedClientTerminologyBrowser;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
+import com.b2international.snowowl.snomed.core.domain.ISnomedConcept;
+import com.b2international.snowowl.snomed.core.domain.ISnomedRelationship;
+import com.b2international.snowowl.snomed.core.domain.SnomedConcepts;
+import com.b2international.snowowl.snomed.core.domain.SnomedRelationships;
+import com.b2international.snowowl.snomed.core.lang.LanguageSetting;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptDocument;
 import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRelationshipIndexEntry;
-import com.google.common.base.Preconditions;
+import com.b2international.snowowl.snomed.datastore.request.SnomedRequests;
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 /**
  * Concept hierarchy service for the SNOMED CT ontology.
@@ -39,11 +46,17 @@ import com.google.common.collect.Sets;
  */
 public class SnomedHierarchicalService implements IHierarchicalService {
 
+	private final String branch;
+
+	public SnomedHierarchicalService(final String branch) {
+		this.branch = branch;
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSnomedRoot()
 	 */
 	@Override
-	public SnomedConceptIndexEntry getSnomedRoot() {
+	public SnomedConceptDocument getSnomedRoot() {
 		return getConcept(Concepts.ROOT_CONCEPT);
 	}
 
@@ -51,24 +64,42 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getRootConcepts()
 	 */
 	@Override
-	public List<SnomedConceptIndexEntry> getRootConcepts() {
-		return Lists.newArrayList(getTerminologyBrowser().getRootConcepts());
+	public List<SnomedConceptDocument> getRootConcepts() {
+		return SnomedRequests.prepareSearchConcept()
+				.all()
+				.filterByParent(toString(SnomedConceptDocument.ROOT_ID))
+				.build(branch)
+				.execute(getBus())
+				.then(SnomedConcepts.TO_DOCS)
+				.getSync();
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getConcept(long)
 	 */
 	@Override
-	public SnomedConceptIndexEntry getConcept(final long conceptId) {
-		return getTerminologyBrowser().getConcept(String.valueOf(conceptId));
+	public SnomedConceptDocument getConcept(final long conceptId) {
+		return Iterables.getOnlyElement(SnomedRequests.prepareSearchConcept()
+				.setLimit(1)
+				.setComponentIds(Collections.singleton(toString(conceptId)))
+				.build(branch)
+				.execute(getBus())
+				.then(SnomedConcepts.TO_DOCS)
+				.getSync(), null);
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSubtypes(long)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getSubtypes(final long conceptId) {
-		return getTerminologyBrowser().getSubTypes(getConcept(conceptId));
+	public Collection<SnomedConceptDocument> getSubtypes(final long conceptId) {
+		return SnomedRequests.prepareSearchConcept()
+				.all()
+				.filterByParent(toString(conceptId))
+				.build(branch)
+				.execute(getBus())
+				.then(SnomedConcepts.TO_DOCS)
+				.getSync();
 	}
 
 	/* (non-Javadoc)
@@ -76,7 +107,12 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public long getDirectSubtypeCount(final long conceptId) {
-		return getTerminologyBrowser().getSubTypeCount(getConcept(conceptId));
+		return SnomedRequests.prepareSearchConcept()
+				.setLimit(0)
+				.filterByParent(toString(conceptId))
+				.build(branch)
+				.execute(getBus())
+				.getSync().getTotal();
 	}
 
 	/* (non-Javadoc)
@@ -84,31 +120,66 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public long getAllSubtypeCount(final long conceptId) {
-		return getTerminologyBrowser().getAllSubTypeCount(getConcept(conceptId));
+		return SnomedRequests.prepareSearchConcept()
+				.setLimit(0)
+				.filterByAncestor(toString(conceptId))
+				.build(branch)
+				.execute(getBus())
+				.getSync().getTotal();
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getAllSubtypes(long)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getAllSubtypes(final long conceptId) {
-		return getTerminologyBrowser().getAllSubTypes(getConcept(conceptId));
+	public Collection<SnomedConceptDocument> getAllSubtypes(final long conceptId) {
+		return SnomedRequests.prepareSearchConcept()
+				.all()
+				.filterByAncestor(toString(conceptId))
+				.build(branch)
+				.execute(getBus())
+				.then(SnomedConcepts.TO_DOCS)
+				.getSync();
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSupertypes(long)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getSupertypes(final long conceptId) {
-		return getTerminologyBrowser().getSuperTypes(getConcept(conceptId));
+	public Collection<SnomedConceptDocument> getSupertypes(final long conceptId) {
+		return SnomedRequests.prepareGetConcept()
+				.setComponentId(toString(conceptId))
+				.setExpand("ancestors(limit:"+Integer.MAX_VALUE+",direct:true,form:\"inferred\")")
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<ISnomedConcept, SnomedConcepts>() {
+					@Override
+					public SnomedConcepts apply(ISnomedConcept input) {
+						return input.getAncestors();
+					}
+				})
+				.then(SnomedConcepts.TO_DOCS)
+				.getSync();
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getAllSupertypes(long)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getAllSupertypes(final long conceptId) {
-		return getTerminologyBrowser().getAllSuperTypes(getConcept(conceptId));
+	public Collection<SnomedConceptDocument> getAllSupertypes(final long conceptId) {
+		return SnomedRequests.prepareGetConcept()
+				.setComponentId(toString(conceptId))
+				.setExpand("ancestors(limit:"+Integer.MAX_VALUE+",direct:false,form:\"inferred\")")
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<ISnomedConcept, SnomedConcepts>() {
+					@Override
+					public SnomedConcepts apply(ISnomedConcept input) {
+						return input.getAncestors();
+					}
+				})
+				.then(SnomedConcepts.TO_DOCS)
+				.getSync();
 	}
 
 	/* (non-Javadoc)
@@ -116,7 +187,18 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public long getDirectSupertypeCount(final long conceptId) {
-		return getTerminologyBrowser().getSubTypeCount(getConcept(conceptId));
+		return SnomedRequests.prepareGetConcept()
+				.setComponentId(toString(conceptId))
+				.setExpand("ancestors(limit:"+0+",direct:true,form:\"inferred\")")
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<ISnomedConcept, SnomedConcepts>() {
+					@Override
+					public SnomedConcepts apply(ISnomedConcept input) {
+						return input.getAncestors();
+					}
+				})
+				.getSync().getTotal();
 	}
 
 	/* (non-Javadoc)
@@ -124,7 +206,18 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public long getAllSupertypeCount(final long conceptId) {
-		return getTerminologyBrowser().getAllSuperTypeCount(getConcept(conceptId));
+		return SnomedRequests.prepareGetConcept()
+				.setComponentId(toString(conceptId))
+				.setExpand("ancestors(limit:"+0+",direct:false,form:\"inferred\")")
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<ISnomedConcept, SnomedConcepts>() {
+					@Override
+					public SnomedConcepts apply(ISnomedConcept input) {
+						return input.getAncestors();
+					}
+				})
+				.getSync().getTotal();
 	}
 
 	/* (non-Javadoc)
@@ -132,7 +225,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public boolean isSubsumed(final long parentRefsetId, final long subsumedRefsetId) {
-		return new SubsumptionTester(getTerminologyBrowser()).isSubsumed(getConcept(parentRefsetId), getConcept(subsumedRefsetId));
+		return new SubsumptionTester(branch).isSubsumed(toString(parentRefsetId), toString(subsumedRefsetId));
 	}
 
 	/* (non-Javadoc)
@@ -140,14 +233,20 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public boolean isAncestor(final long parentConceptId, final long childConceptId) {
-		return getTerminologyBrowser().isSuperTypeOfById(toString(parentConceptId), toString(childConceptId));
+		return SnomedRequests.prepareSearchConcept()
+				.setLimit(0)
+				.filterByAncestor(toString(parentConceptId))
+				.setComponentIds(Collections.singleton(toString(childConceptId)))
+				.build(branch)
+				.execute(getBus())
+				.getSync().getTotal() > 0;
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getShortestPath(long, long)
 	 */
 	@Override
-	public List<SnomedConceptIndexEntry> getShortestPath(final long startingConcept, final long endConcept) {
+	public List<SnomedConceptDocument> getShortestPath(final long startingConcept, final long endConcept) {
 		throw new UnsupportedOperationException("Not implemented yet.");
 	}
 	
@@ -155,55 +254,59 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSourceConcepts(long, long)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getSourceConcepts(final long targetConceptId, final long relationshipTypeId) {
+	public Collection<SnomedConceptDocument> getSourceConcepts(final long targetConceptId, final long relationshipTypeId) {
 		
 		final String conceptId = Long.toString(targetConceptId);
 		final String typeId = Long.toString(relationshipTypeId);
 		return getSourceConcepts(conceptId, typeId);
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSourceConcepts(java.lang.String, java.lang.String)
-	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getSourceConcepts(final String targetConceptId, final String relationshipTypeId) {
-		
-		final Set<SnomedConceptIndexEntry> $ = Sets.newHashSet();
-		
-		final List<SnomedRelationshipIndexEntry> inboundStatements = ApplicationContext.getInstance().getService(SnomedClientStatementBrowser.class).getInboundStatementsById(targetConceptId);
-		
-		for (final SnomedRelationshipIndexEntry relationship : inboundStatements) {
-			
-			if (!relationship.isActive()) {
-				continue; //inactive statement
-			}
-			
-			if (!relationshipTypeId.equals(relationship.getAttributeId())) {
-				continue; //not the specified type
-			}
+	public Collection<SnomedConceptDocument> getSourceConcepts(final String targetConceptId, final String relationshipTypeId) {
+		return SnomedRequests.prepareSearchRelationship()
+				.all()
+				.filterByActive(true)
+				.filterByDestination(targetConceptId)
+				.filterByType(relationshipTypeId)
+				.setExpand("sourceConcept(expand(pt()))")
+				.setLocales(ApplicationContext.getServiceForClass(LanguageSetting.class).getLanguagePreference())
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<SnomedRelationships, Collection<ISnomedConcept>>() {
+					@Override
+					public Collection<ISnomedConcept> apply(SnomedRelationships input) {
+						return FluentIterable.from(input).transform(new Function<ISnomedRelationship, ISnomedConcept>() {
+							@Override
+							public ISnomedConcept apply(ISnomedRelationship input) {
+								return input.getSourceConcept();
+							}
+						}).toList();
+					}
+				})
+				.then(new Function<Collection<ISnomedConcept>, Collection<SnomedConceptDocument>>() {
+					@Override
+					public Collection<SnomedConceptDocument> apply(Collection<ISnomedConcept> input) {
+						return SnomedConceptDocument.fromConcepts(input);
+					}
+				})
+				.getSync();
+	}
 
-			final SnomedConceptIndexEntry sourceConcept = getTerminologyBrowser().getConcept(relationship.getObjectId());
-			
-			if (!sourceConcept.isActive()) {
-				continue; //ignore inactive target concepts
-			}
-			$.add(sourceConcept);
-		}
-		//groovy loves lists.
-		return Lists.newArrayList($);
+	private static IEventBus getBus() {
+		return ApplicationContext.getServiceForClass(IEventBus.class);
 	}
 	
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getTargetConcepts(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getTargetConcepts(String sourceConceptId, String relationshipTypeId) {
+	public Collection<SnomedConceptDocument> getTargetConcepts(String sourceConceptId, String relationshipTypeId) {
 		
-		List<SnomedConceptIndexEntry> targetConceptIndexEntries = Lists.newArrayList();
+		List<SnomedConceptDocument> targetConceptIndexEntries = Lists.newArrayList();
 		List<SnomedRelationshipIndexEntry> activeOutboundRelationships = getActiveOutboundRelationships(sourceConceptId, relationshipTypeId);
 		for (SnomedRelationshipIndexEntry snomedRelationshipIndexEntry : activeOutboundRelationships) {
-			String targetConceptId = snomedRelationshipIndexEntry.getValueId();
-			SnomedConceptIndexEntry targetConceptIndexEntry = getConcept(targetConceptId);
+			String targetConceptId = snomedRelationshipIndexEntry.getDestinationId();
+			SnomedConceptDocument targetConceptIndexEntry = getConcept(targetConceptId);
 			targetConceptIndexEntries.add(targetConceptIndexEntry);
 		}
 		return targetConceptIndexEntries;
@@ -213,7 +316,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getTargetConcepts(long, long)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getTargetConcepts(long sourceConceptId, long relationshipTypeId) {
+	public Collection<SnomedConceptDocument> getTargetConcepts(long sourceConceptId, long relationshipTypeId) {
 		final String conceptId = Long.toString(sourceConceptId);
 		final String typeId = Long.toString(relationshipTypeId);
 		return getTargetConcepts(conceptId, typeId);
@@ -223,15 +326,26 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getConcept(java.lang.String)
 	 */
 	@Override
-	public SnomedConceptIndexEntry getConcept(final String conceptId) {
-		return getTerminologyBrowser().getConcept(conceptId);
+	public SnomedConceptDocument getConcept(final String conceptId) {
+		return Iterables.getOnlyElement(SnomedRequests.prepareSearchConcept()
+				.setLimit(1)
+				.setComponentIds(Collections.singleton(conceptId))
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<SnomedConcepts, Collection<SnomedConceptDocument>>() {
+					@Override
+					public Collection<SnomedConceptDocument> apply(SnomedConcepts input) {
+						return SnomedConceptDocument.fromConcepts(input);
+					}
+				})
+				.getSync(), null);
 	}
 
 	/* (non-Javadoc)
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSubtypes(java.lang.String)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getSubtypes(final String conceptId) {
+	public Collection<SnomedConceptDocument> getSubtypes(final String conceptId) {
 		return getSubtypes(asLong(conceptId));
 	}
 
@@ -255,7 +369,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getAllSubtypes(java.lang.String)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getAllSubtypes(final String conceptId) {
+	public Collection<SnomedConceptDocument> getAllSubtypes(final String conceptId) {
 		return getAllSubtypes(asLong(conceptId));
 	}
 
@@ -263,7 +377,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getSupertypes(java.lang.String)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getSupertypes(final String conceptId) {
+	public Collection<SnomedConceptDocument> getSupertypes(final String conceptId) {
 		return getSupertypes(asLong(conceptId));
 	}
 
@@ -271,7 +385,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getAllSupertypes(java.lang.String)
 	 */
 	@Override
-	public Collection<SnomedConceptIndexEntry> getAllSupertypes(final String conceptId) {
+	public Collection<SnomedConceptDocument> getAllSupertypes(final String conceptId) {
 		return getAllSupertypes(asLong(conceptId));
 	}
 
@@ -311,7 +425,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getShortestPath(java.lang.String, java.lang.String)
 	 */
 	@Override
-	public List<SnomedConceptIndexEntry> getShortestPath(final String startingConcept, final String endConcept) {
+	public List<SnomedConceptDocument> getShortestPath(final String startingConcept, final String endConcept) {
 		return getShortestPath(asLong(startingConcept), asLong(endConcept));
 	}
 	
@@ -320,7 +434,18 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public List<SnomedRelationshipIndexEntry> getOutboundRelationships(final String conceptId) {
-		return getStatementBrowser().getOutboundStatementsById(conceptId);
+		return SnomedRequests.prepareSearchRelationship()
+				.all()
+				.filterBySource(conceptId)
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<SnomedRelationships, List<SnomedRelationshipIndexEntry>>() {
+					@Override
+					public List<SnomedRelationshipIndexEntry> apply(SnomedRelationships input) {
+						return ImmutableList.copyOf(SnomedRelationshipIndexEntry.fromRelationships(input));
+					}
+				})
+				.getSync();
 	}
 
 	/* (non-Javadoc)
@@ -328,7 +453,19 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	 */
 	@Override
 	public List<SnomedRelationshipIndexEntry> getActiveOutboundRelationships(final String conceptId) {
-		return Lists.newArrayList(getStatementBrowser().getActiveOutboundStatementsById(conceptId));
+		return SnomedRequests.prepareSearchRelationship()
+				.all()
+				.filterByActive(true)
+				.filterBySource(conceptId)
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<SnomedRelationships, List<SnomedRelationshipIndexEntry>>() {
+					@Override
+					public List<SnomedRelationshipIndexEntry> apply(SnomedRelationships input) {
+						return ImmutableList.copyOf(SnomedRelationshipIndexEntry.fromRelationships(input));
+					}
+				})
+				.getSync();
 	}
 
 	/* (non-Javadoc)
@@ -338,7 +475,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	public List<SnomedRelationshipIndexEntry> getOutboundRelationships(final String conceptId, final String relationshipTypeId) {
 		return Lists.newArrayList(Collections2.filter(getOutboundRelationships(conceptId), new Predicate<SnomedRelationshipIndexEntry>() {
 			@Override public boolean apply(final SnomedRelationshipIndexEntry relationship) {
-				return relationshipTypeId.equals(relationship.getAttributeId());
+				return relationshipTypeId.equals(relationship.getTypeId());
 			}
 		}));
 	}
@@ -350,35 +487,49 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	public List<SnomedRelationshipIndexEntry> getActiveOutboundRelationships(final String conceptId, final String relationshipTypeId) {
 		return Lists.newArrayList(Collections2.filter(getActiveOutboundRelationships(conceptId), new Predicate<SnomedRelationshipIndexEntry>() {
 			@Override public boolean apply(final SnomedRelationshipIndexEntry relationship) {
-				return relationshipTypeId.equals(relationship.getAttributeId());
+				return relationshipTypeId.equals(relationship.getTypeId());
 			}
 		}));
 	}
 
-	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getInboundRelationships(java.lang.String)
-	 */
 	@Override
 	public List<SnomedRelationshipIndexEntry> getInboundRelationships(final String conceptId) {
-		return getStatementBrowser().getInboundStatementsById(conceptId);
+		return SnomedRequests.prepareSearchRelationship()
+				.all()
+				.filterByDestination(conceptId)
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<SnomedRelationships, List<SnomedRelationshipIndexEntry>>() {
+					@Override
+					public List<SnomedRelationshipIndexEntry> apply(SnomedRelationships input) {
+						return ImmutableList.copyOf(SnomedRelationshipIndexEntry.fromRelationships(input));
+					}
+				})
+				.getSync();
 	}
 
-	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getActiveInboundRelationships(java.lang.String)
-	 */
 	@Override
 	public List<SnomedRelationshipIndexEntry> getActiveInboundRelationships(final String conceptId) {
-		return Lists.newArrayList(getStatementBrowser().getActiveInboundStatementsById(conceptId));
+		return SnomedRequests.prepareSearchRelationship()
+				.all()
+				.filterByActive(true)
+				.filterByDestination(conceptId)
+				.build(branch)
+				.execute(getBus())
+				.then(new Function<SnomedRelationships, List<SnomedRelationshipIndexEntry>>() {
+					@Override
+					public List<SnomedRelationshipIndexEntry> apply(SnomedRelationships input) {
+						return ImmutableList.copyOf(SnomedRelationshipIndexEntry.fromRelationships(input));
+					}
+				})
+				.getSync();
 	}
 
-	/* (non-Javadoc)
-	 * @see com.b2international.snowowl.scripting.services.api.IHierarchicalService#getInboundRelationships(java.lang.String, java.lang.String)
-	 */
 	@Override
 	public List<SnomedRelationshipIndexEntry> getInboundRelationships(final String conceptId, final String relationshipTypeId) {
 		return Lists.newArrayList(Collections2.filter(getActiveInboundRelationships(conceptId), new Predicate<SnomedRelationshipIndexEntry>() {
 			@Override public boolean apply(final SnomedRelationshipIndexEntry relationship) {
-				return relationshipTypeId.equals(relationship.getAttributeId());
+				return relationshipTypeId.equals(relationship.getTypeId());
 			}
 		}));
 	}
@@ -390,7 +541,7 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	public List<SnomedRelationshipIndexEntry> getActiveInboundRelationships(final String conceptId, final String relationshipTypeId) {
 		return Lists.newArrayList(Collections2.filter(getActiveInboundRelationships(conceptId), new Predicate<SnomedRelationshipIndexEntry>() {
 			@Override public boolean apply(final SnomedRelationshipIndexEntry relationship) {
-				return relationshipTypeId.equals(relationship.getAttributeId());
+				return relationshipTypeId.equals(relationship.getTypeId());
 			}
 		}));
 	}
@@ -457,20 +608,6 @@ public class SnomedHierarchicalService implements IHierarchicalService {
 	@Override
 	public List<SnomedRelationshipIndexEntry> getActiveInboundRelationships(final long conceptId, final long relationshipTypeId) {
 		return getActiveInboundRelationships(toString(conceptId), toString(relationshipTypeId));
-	}
-
-	/*returns with the SNOMED CT concept hierarchy browsing service registered to the application context*/
-	private SnomedClientTerminologyBrowser getTerminologyBrowser() {
-		return Preconditions.checkNotNull(
-				ApplicationContext.getInstance().getService(SnomedClientTerminologyBrowser.class), 
-				"SNOMED CT concept hierarchy browsing service was null.");
-	}
-	
-	/*returns with the SNOMED CT concept hierarchy browsing service registered to the application context*/
-	private SnomedClientStatementBrowser getStatementBrowser() {
-		return Preconditions.checkNotNull(
-				ApplicationContext.getInstance().getService(SnomedClientStatementBrowser.class), 
-				"SNOMED CT concept statement browsing service was null.");
 	}
 
 	private long asLong(final String id) {

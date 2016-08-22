@@ -15,10 +15,14 @@
  */
 package com.b2international.snowowl.snomed.reasoner.server.changeprocessor;
 
+import com.b2international.index.revision.RevisionIndex;
+import com.b2international.snowowl.core.ApplicationContext;
+import com.b2international.snowowl.core.RepositoryManager;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
 import com.b2international.snowowl.datastore.ICDOChangeProcessor;
 import com.b2international.snowowl.datastore.server.CDOChangeProcessorFactory;
+import com.b2international.snowowl.snomed.datastore.SnomedDatastoreActivator;
 
 /**
  * CDO change processor factory responsible to create {@link SnomedReasonerChangeProcessor change processors} for SNOMED CT ontologies.
@@ -28,21 +32,15 @@ public class SnomedReasonerChangeProcessorFactory implements CDOChangeProcessorF
 
 	private static final String FACTORY_NAME = "SNOMED CT OWL change processor factory";
 
-	/* 
-	 * (non-Javadoc)
-	 * @see com.b2international.snowowl.datastore.CDOChangeProcessorFactory#getFactoryName()
-	 */
 	@Override
 	public String getFactoryName() {
 		return FACTORY_NAME;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see com.b2international.snowowl.datastore.server.CDOChangeProcessorFactory#createChangeProcessor(com.b2international.snowowl.core.api.IBranchPath, boolean)
-	 */
 	@Override
-	public ICDOChangeProcessor createChangeProcessor(IBranchPath branchPath, final boolean canCopyThreadLocal) throws SnowowlServiceException {
-		return new SnomedReasonerChangeProcessor(branchPath);
+	public ICDOChangeProcessor createChangeProcessor(IBranchPath branchPath) throws SnowowlServiceException {
+		final ApplicationContext context = ApplicationContext.getInstance();
+		final RevisionIndex index = context.getService(RepositoryManager.class).get(SnomedDatastoreActivator.REPOSITORY_UUID).service(RevisionIndex.class);
+		return new SnomedReasonerChangeProcessor(branchPath, index);
 	}
 }

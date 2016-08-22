@@ -18,11 +18,9 @@ package com.b2international.snowowl.semanticengine.normalform;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.b2international.snowowl.core.api.browser.IClientTerminologyBrowser;
 import com.b2international.snowowl.dsl.scg.Concept;
 import com.b2international.snowowl.dsl.scg.ScgFactory;
 import com.b2international.snowowl.semanticengine.subsumption.SubsumptionTester;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
 
 /**
  * <b>5.3.5	Merge refinement</b><br/>
@@ -47,10 +45,10 @@ import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptInd
  */
 public class RefinementsMerger {
 	
-	private final IClientTerminologyBrowser<SnomedConceptIndexEntry, String> snor;
+	private final String branchPath;
 
-	public RefinementsMerger(IClientTerminologyBrowser<SnomedConceptIndexEntry, String> snor) {
-		this.snor = snor;
+	public RefinementsMerger(String branchPath) {
+		this.branchPath = branchPath;
 	}
 
 	/** 
@@ -59,7 +57,7 @@ public class RefinementsMerger {
 	 * @return the merged refinements
 	 */
 	public ConceptDefinition mergeRefinements(FocusConceptNormalizationResult normalizedFocusConcepts, ConceptDefinition normalizedExpressionRefinements) {
-		ConceptDefinitionMerger conceptDefinitionMerger = new ConceptDefinitionMerger(new SubsumptionTester(snor));
+		ConceptDefinitionMerger conceptDefinitionMerger = new ConceptDefinitionMerger(new SubsumptionTester(branchPath));
 		Map<Concept, ConceptDefinition> conceptDefinitionMap = new HashMap<Concept, ConceptDefinition>();
 		// TODO: get rid of dummy concepts
 		conceptDefinitionMap.put(ScgFactory.eINSTANCE.createConcept(), normalizedFocusConcepts.mergedConceptDefinition);

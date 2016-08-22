@@ -28,18 +28,18 @@ import javax.validation.constraints.Size;
 
 import org.hibernate.validator.constraints.NotEmpty;
 
-import com.b2international.snowowl.core.api.IBranchPath;
+import com.b2international.snowowl.core.domain.IComponent;
 import com.b2international.snowowl.core.domain.TransactionContext;
 import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ComponentNotFoundException;
 import com.b2international.snowowl.snomed.Concept;
-import com.b2international.snowowl.snomed.Relationship;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
 import com.b2international.snowowl.snomed.core.domain.Acceptability;
 import com.b2international.snowowl.snomed.core.domain.DefinitionStatus;
 import com.b2international.snowowl.snomed.core.domain.IdGenerationStrategy;
+import com.b2international.snowowl.snomed.core.domain.SnomedConcepts;
 import com.b2international.snowowl.snomed.core.store.SnomedComponents;
-import com.b2international.snowowl.snomed.datastore.services.ISnomedComponentService;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Multiset;
@@ -88,19 +88,35 @@ public final class SnomedConceptCreateRequest extends BaseSnomedComponentCreateR
 	public String execute(TransactionContext context) {
 		ensureUniqueId("Concept", context);
 		
-		final IBranchPath branchPath = context.branch().branchPath();
-		
 		final Concept concept = convertConcept(context);
-		concept.getOutboundRelationships().add(convertParentIsARelationship(context));
 		context.add(concept);
 
+		convertDescriptions(context, concept.getId());
+		convertRelationships(context, concept.getId());
+
+		return concept.getId();
+	}
+
+	private Concept convertConcept(final TransactionContext context) {
+		try {
+			return SnomedComponents.newConcept()
+					.withId(getIdGenerationStrategy())
+					.withModule(getModuleId())
+					.withDefinitionStatus(definitionStatus)
+					.build(context);
+		} catch (final ComponentNotFoundException e) {
+			throw e.toBadRequestException();
+		}
+	}
+
+	private void convertDescriptions(TransactionContext context, final String conceptId) {
 		final Set<String> requiredDescriptionTypes = newHashSet(Concepts.FULLY_SPECIFIED_NAME, Concepts.REFSET_DESCRIPTION_ACCEPTABILITY_PREFERRED);
 		final Multiset<String> preferredLanguageRefSetIds = HashMultiset.create();
-		final Set<String> synonymAndDescendantIds = context.service(ISnomedComponentService.class).getSynonymAndDescendantIds(branchPath);
+		final Set<String> synonymAndDescendantIds = getSynonymAndDescendantIds(context);
 
 		for (final SnomedDescriptionCreateRequest descriptionRequest : descriptions) {
 
-			descriptionRequest.setConceptId(concept.getId());
+			descriptionRequest.setConceptId(conceptId);
 
 			if (null == descriptionRequest.getModuleId()) {
 				descriptionRequest.setModuleId(getModuleId());
@@ -131,31 +147,26 @@ public final class SnomedConceptCreateRequest extends BaseSnomedComponentCreateR
 				throw new BadRequestException("More than one preferred term has been added for language reference set %s.", languageRefSetIdOccurence.getElement());				
 			}
 		}
+	}
+	
+	private Set<String> getSynonymAndDescendantIds(TransactionContext context) {
+		final SnomedConcepts concepts = SnomedRequests.prepareGetSynonyms().build().execute(context);
+		return FluentIterable.from(concepts).transform(IComponent.ID_FUNCTION).toSet();
+	}
 
-		return concept.getId();
-	}
-	
-	private Concept convertConcept(final TransactionContext context) {
+	// TODO: Add support for multiple relationship creation requests
+	private void convertRelationships(final TransactionContext context, String conceptId) {
 		try {
-			return SnomedComponents.newConcept()
-					.withId(getIdGenerationStrategy())
-					.withModule(getModuleId())
-					.withDefinitionStatus(definitionStatus)
-					.build(context);
-		} catch (final ComponentNotFoundException e) {
-			throw e.toBadRequestException();
-		}
-	}
-	
-	private Relationship convertParentIsARelationship(final TransactionContext context) {
-		try {
-			final Relationship parentIsARelationship = SnomedComponents.newRelationship()
-					.withId(isAIdGenerationStrategy)
-					.withModule(getModuleId())
-					.withDestination(parentId)
-					.withType(IS_A)
-					.build(context);
-			return parentIsARelationship;
+			
+			SnomedRequests.prepareNewRelationship()
+					.setId(isAIdGenerationStrategy)
+					.setModuleId(getModuleId())
+					.setSourceId(conceptId)
+					.setDestinationId(parentId)
+					.setTypeId(IS_A)
+					.build()
+					.execute(context);
+			
 		} catch (final ComponentNotFoundException e) {
 			throw e.toBadRequestException();
 		}

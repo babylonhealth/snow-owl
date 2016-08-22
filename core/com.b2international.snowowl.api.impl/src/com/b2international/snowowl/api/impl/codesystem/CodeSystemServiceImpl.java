@@ -41,14 +41,7 @@ public class CodeSystemServiceImpl implements ICodeSystemService {
 
 		@Override
 		public ICodeSystem apply(final com.b2international.snowowl.datastore.ICodeSystem input) {
-			final CodeSystem result = new CodeSystem();
-			result.setCitation(input.getCitation());
-			result.setName(input.getName());
-			result.setOid(input.getOid());
-			result.setOrganizationLink(input.getOrgLink());
-			result.setPrimaryLanguage(input.getLanguage());
-			result.setShortName(input.getShortName());
-			return result;
+			return CodeSystem.builder(input).build();
 		}
 	};
 
@@ -64,7 +57,7 @@ public class CodeSystemServiceImpl implements ICodeSystemService {
 	protected static TerminologyRegistryService getRegistryService() {
 		return ApplicationContext.getServiceForClass(TerminologyRegistryService.class);
 	}
-
+	
 	@Override
 	public List<ICodeSystem> getCodeSystems() {
 		return toSortedCodeSystemList(getRegistryService().getCodeSystems(MAIN_BRANCH_PATH_MAP));
@@ -91,4 +84,5 @@ public class CodeSystemServiceImpl implements ICodeSystemService {
 	private List<ICodeSystem> toSortedCodeSystemList(final Collection<com.b2international.snowowl.datastore.ICodeSystem> sourceCodeSystems) {
 		return SHORT_NAME_ORDERING.immutableSortedCopy(transform(sourceCodeSystems, CODE_SYSTEM_CONVERTER));
 	}
+	
 }

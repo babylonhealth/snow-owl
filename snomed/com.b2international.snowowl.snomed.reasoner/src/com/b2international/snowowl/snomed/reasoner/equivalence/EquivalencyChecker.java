@@ -18,12 +18,11 @@ package com.b2international.snowowl.snomed.reasoner.equivalence;
 import java.util.List;
 import java.util.UUID;
 
-import bak.pcj.map.LongKeyLongMap;
-import bak.pcj.map.LongKeyLongOpenHashMap;
-import bak.pcj.set.LongOpenHashSet;
-import bak.pcj.set.LongSet;
-
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
+import com.b2international.collections.PrimitiveMaps;
+import com.b2international.collections.PrimitiveSets;
+import com.b2international.collections.longs.LongKeyLongMap;
+import com.b2international.collections.longs.LongSet;
+import com.b2international.snowowl.snomed.core.domain.ISnomedConcept;
 import com.b2international.snowowl.snomed.reasoner.classification.AbstractEquivalenceSet;
 import com.b2international.snowowl.snomed.reasoner.classification.AbstractResponse.Type;
 import com.b2international.snowowl.snomed.reasoner.classification.ClassificationRequest;
@@ -49,7 +48,7 @@ public class EquivalencyChecker extends ClassifyOperation<LongKeyLongMap> {
 
 		final List<ConceptDefinition> additionalDefinitions = classificationRequest.getAdditionalDefinitions();
 		final LongSet conceptIdsToCheck = collectConceptIds(additionalDefinitions);
-		final LongKeyLongMap equivalentConceptMap = new LongKeyLongOpenHashMap();
+		final LongKeyLongMap equivalentConceptMap = PrimitiveMaps.newLongKeyLongOpenHashMap();
 		final GetEquivalentConceptsResponse response = getReasonerService().getEquivalentConcepts(classificationId);
 
 		if (Type.NOT_AVAILABLE == response.getType()) {
@@ -71,14 +70,14 @@ public class EquivalencyChecker extends ClassifyOperation<LongKeyLongMap> {
 				continue;
 			}
 
-			final SnomedConceptIndexEntry suggestedConcept = ((EquivalenceSet) equivalenceSet).getSuggestedConcept();
+			final ISnomedConcept suggestedConcept = ((EquivalenceSet) equivalenceSet).getSuggestedConcept();
 			registerEquivalentConcepts(suggestedConcept, equivalenceSet.getConcepts(), equivalentConceptMap, conceptIdsToCheck);
 		}
 	}
 
 	private LongSet collectConceptIds(final List<ConceptDefinition> conceptDefinitions) {
 
-		final LongSet conceptIds = new LongOpenHashSet();
+		final LongSet conceptIds = PrimitiveSets.newLongOpenHashSet();
 
 		for (final ConceptDefinition definition : conceptDefinitions) {
 			conceptIds.add(definition.getConceptId());
@@ -87,15 +86,15 @@ public class EquivalencyChecker extends ClassifyOperation<LongKeyLongMap> {
 		return conceptIds;
 	}
 
-	private void registerEquivalentConcepts(final SnomedConceptIndexEntry suggestedConcept, 
-			final List<SnomedConceptIndexEntry> equivalentConcepts,
+	private void registerEquivalentConcepts(final ISnomedConcept suggestedConcept, 
+			final List<ISnomedConcept> equivalentConcepts,
 			final LongKeyLongMap equivalentConceptMap, 
 			final LongSet conceptIdsToCheck) {
 
 		final long replacementConceptId = getConceptId(suggestedConcept);
 		final boolean registerAll = conceptIdsToCheck.isEmpty();
 		
-		for (final SnomedConceptIndexEntry equivalentConcept : equivalentConcepts) {
+		for (final ISnomedConcept equivalentConcept : equivalentConcepts) {
 			final long equivalentConceptId = getConceptId(equivalentConcept);
 			if (registerAll || conceptIdsToCheck.contains(equivalentConceptId)) {
 				equivalentConceptMap.put(equivalentConceptId, replacementConceptId);
@@ -103,7 +102,7 @@ public class EquivalencyChecker extends ClassifyOperation<LongKeyLongMap> {
 		}
 	}
 
-	private Long getConceptId(final SnomedConceptIndexEntry conceptIndexEntry) {
+	private Long getConceptId(final ISnomedConcept conceptIndexEntry) {
 		return Long.valueOf(conceptIndexEntry.getId());
 	}
 }

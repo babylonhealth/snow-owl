@@ -28,18 +28,17 @@ import org.eclipse.emf.cdo.CDOObject;
 import org.eclipse.emf.cdo.CDOState;
 import org.eclipse.emf.cdo.common.branch.CDOBranch;
 import org.eclipse.emf.cdo.view.CDOView;
-import org.eclipse.emf.ecore.EPackage;
 
 import com.b2international.commons.collections.BackwardListIterator;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBaseBranchPath;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.NullBranchPath;
+import com.b2international.snowowl.core.branch.Branch;
+import com.b2international.snowowl.core.exceptions.NotFoundException;
 import com.b2international.snowowl.datastore.cdo.CDOUtils;
-import com.b2international.snowowl.datastore.cdo.ICDOConnection;
-import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
-import com.b2international.snowowl.datastore.tasks.Task;
-import com.b2international.snowowl.datastore.tasks.TaskManager;
+import com.b2international.snowowl.datastore.request.RepositoryRequests;
+import com.b2international.snowowl.eventbus.IEventBus;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
@@ -59,51 +58,6 @@ public abstract class BranchPathUtils {
 	 */
 	private static final Interner<IBranchPath> BRANCH_PATH_INTERNER = Interners.newStrongInterner();
 			
-	/**
-	 * Returns with the {@link IBranchPath branch path} instance based on the currently used active branch in a particular repository.
-	 * @param ePackage the {@link EPackage} associated with a repository
-	 * @return the {@link IBranchPath} instance.
-	 * @see TaskManager#getActiveBranch()
-	 */
-	public static IBranchPath createActivePath(final EPackage ePackage) {
-		checkNotNull(ePackage, "EPackage reference may not be null.");
-		
-		final ICDOConnectionManager connectionManager = ApplicationContext.getInstance().getService(ICDOConnectionManager.class);
-		final ICDOConnection connection = connectionManager.get(ePackage);
-		return BranchPathUtils.createActivePath(connection.getUuid());
-	}
-	
-	/**
-	 * Returns with the parent of the active {@link IBranchPath branch path} instance based on the currently used active branch in a particular repository.
-	 * If the active path is MAIN then returns the active path itself.
-	 * @param ePackage the {@link EPackage} associated with a repository
-	 * @return the {@link IBranchPath} instance.
-	 * @see TaskManager#getActiveBranch()
-	 */
-	public static IBranchPath createParentForActivePath(final EPackage ePackage) {
-		IBranchPath activePath = createActivePath(ePackage);
-		if(!BranchPathUtils.isMain(activePath)) {
-			return activePath.getParent();
-		}
-		return activePath;
-	}
-	
-	public static TaskBranchPathMap createPathForTaskId(final String taskId) {
-		final TaskManager taskManager = ApplicationContext.getInstance().getService(TaskManager.class);
-		final Task task = taskManager.getTask(taskId);
-		return checkNotNull(task, "Task not found for %s", taskId).getTaskBranchPathMap();
-	}
-	
-	/**
-	 * Returns with the {@link IBranchPath branch path} instance based on the currently used active branch.
-	 * @param repositoryId the repository identifier.
-	 * @return the {@link IBranchPath} instance.
-	 * @see TaskManager#getActiveBranch()
-	 */
-	public static IBranchPath createActivePath(final String repositoryId) {
-		return getOrCache(ApplicationContext.getInstance().getService(TaskManager.class).getActiveBranch(repositoryId));
-	}
-	
 	/**
 	 * Returns with the branch path representing the MAIN branch.
 	 * @return the branch path for the MAIN branch.
@@ -153,20 +107,6 @@ public abstract class BranchPathUtils {
 	 */
 	public static IBranchPath createPath(final CDOObject object) {
 		return createPath(CDOUtils.check(object).cdoView());
-	}
-	
-	/**
-	 * Returns with a new {@link IBranchPath branch path} representing a version branch. 
-	 * The ancestor of the returning branch path is always the {@link IBranchPath#MAIN_BRANCH}.
-	 * <p>This method will return with a path representing the MAIN branch only and if only the 
-	 * given version name argument equals with the {@link IBranchPath#MAIN_BRANCH}. 
-	 * @param versionName the version name.
-	 * @return the branch path representing the version branch.
-	 */
-	public static IBranchPath createVersionPath(final String versionName) {
-		return IBranchPath.MAIN_BRANCH.equals(versionName) 
-				? createMainPath() 
-				: createPath(createMainPath(), checkNotNull(versionName, "versionName"));
 	}
 	
 	/**
@@ -287,9 +227,7 @@ public abstract class BranchPathUtils {
 			}
 			
 		}
-		
 		return new BackwardListIterator<IBranchPath>(unmodifiableList($));
-		
 	}
 	
 	/**
@@ -301,6 +239,30 @@ public abstract class BranchPathUtils {
 	 */
 	public static Iterator<IBranchPath> bottomToTopIterator(final IBranchPath branchPath) {
 		return new BackwardListIterator<IBranchPath>(newArrayList(topToBottomIterator(checkNotNull(branchPath, "branchPath"))));
+	}
+	
+	/**
+	 * Returns true if the branch with the path specified exists within the specified repository.
+	 * @param repositoryUUID
+	 * @param branchPath
+	 * @return true if the branch exists in the repository
+	 */
+	public static boolean exists(String repositoryUUID, String branchPath) {
+		try {
+			RepositoryRequests.branching(repositoryUUID).prepareGet(branchPath).executeSync(ApplicationContext.getInstance().getService(IEventBus.class), 1000);
+		} catch (NotFoundException e) {
+			return false;
+		}
+		return true;
+	}
+	
+	/**
+	 * Returns the MAIN branch for the repository specified by it's repository UUID.
+	 * @param repositoryUUID
+	 * @return
+	 */
+	public static Branch getMainBranchForRepository(String repositoryUUID) {
+		return RepositoryRequests.branching(repositoryUUID).prepareGet(IBranchPath.MAIN_BRANCH).executeSync(ApplicationContext.getInstance().getService(IEventBus.class), 1000);
 	}
 	
 	private static IBranchPath getOrCache(final IBranchPath branchPath) {

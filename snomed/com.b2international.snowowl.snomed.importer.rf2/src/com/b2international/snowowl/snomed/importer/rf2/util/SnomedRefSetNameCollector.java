@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URL;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -35,14 +34,11 @@ import com.b2international.commons.csv.CsvLexer.EOL;
 import com.b2international.commons.csv.CsvParser;
 import com.b2international.commons.csv.CsvSettings;
 import com.b2international.commons.csv.RecordParserCallback;
-import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.SnowOwlApplication;
 import com.b2international.snowowl.snomed.SnomedConstants;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
 import com.b2international.snowowl.snomed.common.SnomedRf2Headers;
-import com.b2international.snowowl.snomed.datastore.SnomedClientTerminologyBrowser;
 import com.b2international.snowowl.snomed.datastore.config.SnomedCoreConfiguration;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
 import com.b2international.snowowl.snomed.importer.net4j.ImportConfiguration;
 import com.b2international.snowowl.snomed.importer.rf2.refset.ErroneousAustralianReleaseFileNames;
 import com.google.common.base.Optional;
@@ -140,7 +136,7 @@ public class SnomedRefSetNameCollector {
 		}
 
 		// Step 3: Mine the terminology browser for more labels (if registered)
-		fillLabelsFromTeminologyBrowser(unlabeledRefSetIds);
+//		fillLabelsFromTeminologyBrowser(unlabeledRefSetIds);
 		
 		// Step 4: There may be some reference sets for which we couldn't get a label; initialize these with boilerplate text
 		fillGeneralLabels(unlabeledRefSetIds);
@@ -308,27 +304,21 @@ public class SnomedRefSetNameCollector {
 		return null;
 	}
 
-	private void fillLabelsFromTeminologyBrowser(Set<String> unlabeledRefSetIds) {
-		
-		final SnomedClientTerminologyBrowser terminologyBrowser = ApplicationContext.getInstance().getService(SnomedClientTerminologyBrowser.class);
-		
-		if (terminologyBrowser != null) {
-			
-			Iterator<String> unlabeledRefSetIdIterator = unlabeledRefSetIds.iterator();
-			
-			while (unlabeledRefSetIdIterator.hasNext()) {
-				
-				String refSetId = unlabeledRefSetIdIterator.next();
-				SnomedConceptIndexEntry refsetConcept = terminologyBrowser.getConcept(refSetId);
-				
-				if (refsetConcept != null) {
-					String refSetLabel = refsetConcept.getLabel();
-					availableLabels.put(refSetId, refSetLabel);
-					unlabeledRefSetIdIterator.remove();
-				}
-			}
-		}
-	}
+//	private void fillLabelsFromTeminologyBrowser(Set<String> unlabeledRefSetIds) {
+//		Iterator<String> unlabeledRefSetIdIterator = unlabeledRefSetIds.iterator();
+//		
+//		while (unlabeledRefSetIdIterator.hasNext()) {
+//			
+//			String refSetId = unlabeledRefSetIdIterator.next();
+//			SnomedConceptDocument refsetConcept = terminologyBrowser.getConcept(refSetId);
+//			
+//			if (refsetConcept != null) {
+//				String refSetLabel = refsetConcept.getLabel();
+//				availableLabels.put(refSetId, refSetLabel);
+//				unlabeledRefSetIdIterator.remove();
+//			}
+//		}
+//	}
 
 	private void fillGeneralLabels(Set<String> unlabeledRefSetIds) {
 		
@@ -380,7 +370,7 @@ public class SnomedRefSetNameCollector {
 		}
 
 		// Step 2: Mine the terminology browser for more labels (if registered)
-		fillLabelsFromTeminologyBrowser(unlabeledRefSetIds);
+//		fillLabelsFromTeminologyBrowser(unlabeledRefSetIds);
 		
 		// Step 3: There may be some reference sets for which we couldn't get a label; initialize these with boilerplate text
 		fillGeneralLabels(unlabeledRefSetIds);

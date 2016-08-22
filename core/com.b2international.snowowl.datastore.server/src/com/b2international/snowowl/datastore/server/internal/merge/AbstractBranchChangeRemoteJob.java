@@ -25,9 +25,10 @@ import com.b2international.snowowl.core.Repository;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.exceptions.ApiError;
 import com.b2international.snowowl.core.exceptions.ApiException;
-import com.b2international.snowowl.core.exceptions.BadRequestException;
+import com.b2international.snowowl.core.exceptions.MergeConflictException;
 import com.b2international.snowowl.core.merge.Merge;
 import com.b2international.snowowl.datastore.BranchPathUtils;
+import com.b2international.snowowl.datastore.server.remotejobs.BranchExclusiveRule;
 
 /**
  * @since 4.6
@@ -38,12 +39,10 @@ public abstract class AbstractBranchChangeRemoteJob extends Job {
 		final IBranchPath sourcePath = BranchPathUtils.createPath(source);
 		final IBranchPath targetPath = BranchPathUtils.createPath(target);
 		
-		if (sourcePath.getParent().equals(targetPath)) {
-			return new BranchMergeJob(repository, source, target, commitMessage, reviewId);
-		} else if (targetPath.getParent().equals(sourcePath)) {
+		if (targetPath.getParent().equals(sourcePath)) {
 			return new BranchRebaseJob(repository, source, target, commitMessage, reviewId);
 		} else {
-			throw new BadRequestException("Branches '%s' and '%s' can only be merged or rebased if one branch is the direct parent of the other.", source, target);
+			return new BranchMergeJob(repository, source, target, commitMessage, reviewId);
 		}
 	}
 
@@ -63,10 +62,9 @@ public abstract class AbstractBranchChangeRemoteJob extends Job {
 		
 		setSystem(true);
 		
-		// TODO: Make reasoner remote job rule conflicting and add it as additional items below 
 		setRule(MultiRule.combine(
-				new BranchChangeRemoteJobKey(repository.id(), sourcePath), 
-				new BranchChangeRemoteJobKey(repository.id(), targetPath)));
+				new BranchExclusiveRule(repository.id(), BranchPathUtils.createPath(sourcePath)), 
+				new BranchExclusiveRule(repository.id(), BranchPathUtils.createPath(targetPath))));
 	}
 	
 	@Override
@@ -76,6 +74,8 @@ public abstract class AbstractBranchChangeRemoteJob extends Job {
 		try {
 			applyChanges();
 			merge.completed();
+		} catch (MergeConflictException e) {
+			merge.failedWithConflicts(e.getConflicts(), e.toApiError());
 		} catch (ApiException e) {
 			merge.failed(e.toApiError());
 		} catch (RuntimeException e) {

@@ -28,16 +28,19 @@ import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import bak.pcj.LongIterator;
-import bak.pcj.map.LongKeyLongMap;
-import bak.pcj.map.LongKeyLongOpenHashMap;
-import bak.pcj.set.LongOpenHashSet;
-import bak.pcj.set.LongSet;
-
+import com.b2international.collections.PrimitiveMaps;
+import com.b2international.collections.PrimitiveSets;
+import com.b2international.collections.longs.LongIterator;
+import com.b2international.collections.longs.LongKeyLongMap;
+import com.b2international.collections.longs.LongSet;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBranchPath;
-import com.b2international.snowowl.snomed.datastore.SnomedTerminologyBrowser;
+import com.b2international.snowowl.eventbus.IEventBus;
+import com.b2international.snowowl.snomed.core.domain.ISnomedConcept;
+import com.b2international.snowowl.snomed.core.domain.SnomedConcepts;
+import com.b2international.snowowl.snomed.datastore.request.SnomedRequests;
 import com.b2international.snowowl.snomed.reasoner.model.SnomedOntologyUtils;
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterables;
@@ -74,8 +77,26 @@ public class ReasonerTaxonomyWalker {
 		this.reasoner = reasoner;
 		this.taxonomy = changeSet;
 		this.pm = SnomedOntologyUtils.createPrefixManager(SnomedOntologyUtils.BASE_IRI.resolve(branchPath.getPath()));
-		processedConceptIds = new LongOpenHashSet(600000);
-		idToStorageKeyMap = ApplicationContext.getInstance().getService(SnomedTerminologyBrowser.class).getConceptIdToStorageKeyMap(branchPath);
+		this.processedConceptIds = PrimitiveSets.newLongOpenHashSetWithExpectedSize(600000);
+		this.idToStorageKeyMap = getConceptIdToStorageKeyMap(branchPath);
+	}
+
+	private LongKeyLongMap getConceptIdToStorageKeyMap(IBranchPath branchPath) {
+		return SnomedRequests.prepareSearchConcept()
+				.all()
+				.build(branchPath.getPath())
+				.execute(ApplicationContext.getServiceForClass(IEventBus.class))
+				.then(new Function<SnomedConcepts, LongKeyLongMap>() {
+					@Override
+					public LongKeyLongMap apply(SnomedConcepts input) {
+						final LongKeyLongMap result = PrimitiveMaps.newLongKeyLongOpenHashMapWithExpectedSize(input.getTotal());
+						for (ISnomedConcept concept : input) {
+							result.put(Long.parseLong(concept.getId()), concept.getStorageKey());
+						}
+						return result;
+					}
+				})
+				.getSync();
 	}
 
 	/**
@@ -118,7 +139,7 @@ public class ReasonerTaxonomyWalker {
 
  		// Check first if we are at the bottom node, as all OWL classes are superclasses of Nothing
  		final boolean unsatisfiable = node.isBottomNode();
- 		final LongSet conceptIds = new LongOpenHashSet();
+ 		final LongSet conceptIds = PrimitiveSets.newLongOpenHashSet();
  		final long representativeConceptId = getConceptIds(node, conceptIds);
 
 		if (unsatisfiable) {
@@ -141,7 +162,7 @@ public class ReasonerTaxonomyWalker {
 			registerEquivalentConceptIds(conceptIds, unsatisfiable);
 		}
 
-		final LongSet parentConceptIds = new LongOpenHashSet();
+		final LongSet parentConceptIds = PrimitiveSets.newLongOpenHashSet();
 		
 		for (final Node<OWLClass> parentNode : parentNodeSet) {
 			
@@ -150,7 +171,7 @@ public class ReasonerTaxonomyWalker {
 				break;
 			}
 			
-			final long parentConceptId = getConceptIds(parentNode, new LongOpenHashSet());
+			final long parentConceptId = getConceptIds(parentNode, PrimitiveSets.newLongOpenHashSet());
 			parentConceptIds.add(parentConceptId);
 		}
 		
@@ -214,7 +235,7 @@ public class ReasonerTaxonomyWalker {
 			conceptIds.add(conceptId);
 		}
 		
-		final LongKeyLongMap map = new LongKeyLongOpenHashMap(conceptIds.size());
+		final LongKeyLongMap map = PrimitiveMaps.newLongKeyLongOpenHashMapWithExpectedSize(conceptIds.size());
 		
 		for (final LongIterator itr = conceptIds.iterator(); itr.hasNext(); /* nothing */) {
 			final long conceptId = itr.next();

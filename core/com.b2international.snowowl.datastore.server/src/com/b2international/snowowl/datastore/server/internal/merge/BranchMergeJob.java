@@ -19,13 +19,13 @@ import com.b2international.snowowl.core.Repository;
 import com.b2international.snowowl.core.branch.Branch;
 import com.b2international.snowowl.core.branch.BranchMergeException;
 import com.b2international.snowowl.core.domain.RepositoryContext;
-import com.b2international.snowowl.core.exceptions.BadRequestException;
 import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.core.merge.Merge;
 import com.b2international.snowowl.datastore.oplock.impl.DatastoreOperationLockException;
 import com.b2international.snowowl.datastore.request.AbstractBranchChangeRequest;
 import com.b2international.snowowl.datastore.request.Locks;
 import com.b2international.snowowl.datastore.request.RepositoryRequests;
+import com.google.common.base.Strings;
 
 /**
  * @since 4.6
@@ -40,15 +40,10 @@ public class BranchMergeJob extends AbstractBranchChangeRemoteJob {
 
 		@Override
 		protected Branch execute(RepositoryContext context, Branch source, Branch target) {
-
-			if (!source.parent().equals(target)) {
-				throw new BadRequestException("Cannot merge source '%s' into target '%s'; target is not the direct parent of source.", source.path(), target.path());
-			}
-
 			try (Locks locks = new Locks(context, source, target)) {
 				return target.merge(source, commitMessage);
 			} catch (BranchMergeException e) {
-				throw new ConflictException("Cannot merge source '%s' into target '%s'.", source.path(), target.path(), e);
+				throw new ConflictException(Strings.isNullOrEmpty(e.getMessage()) ? "Cannot merge source '%s' into target '%s'." : e.getMessage(), source.path(), target.path(), e);
 			} catch (DatastoreOperationLockException e) {
 				throw new ConflictException("Lock exception caught while merging source '%s' into target '%s'. %s", source.path(), target.path(), e.getMessage());
 			} catch (InterruptedException e) {

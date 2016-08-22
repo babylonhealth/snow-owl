@@ -736,16 +736,15 @@ authentication:
 |`3 x NumberOfCores`
 |The number of worker threads to assign to a repository during initialization.
 
-|indexTimeout
-|`240`
-|The timeout in minutes after indexes will be closed if they are not in use anymore.
+|revisionCache
+|`true`
+|Enable CDO revision cache to keep data returned from the database.
 |===
 
 --------------------------
 repository:
   host: 0.0.0.0
   port: 2036
-  indexTimeout: 240
 --------------------------
 
 ==== Database
@@ -801,6 +800,63 @@ repository:
     password: admin
 --------------------------
 
+==== Index
+[cols="3*", options="header"]
+|===
+|Name
+|Default
+|Description
+
+|commitInterval
+|`15000`
+|The hard commit interval of an index in milliseconds.
+
+|translogSyncInterval
+|`5000`
+|The sync interval of the transaction log in milliseconds.
+
+|queryWarnThreshold
+|`400`
+|The threshold of the warn log when querying data.
+
+|queryInfoThreshold
+|`300`
+|The threshold of the info log when querying data.
+
+|queryDebugThreshold
+|`100`
+|The threshold of the debug log when querying data.
+
+|queryTraceThreshold
+|`50`
+|The threshold of the trace log when querying data.
+
+|fetchWarnThreshold
+|`200`
+|The threshold of the warn log when fetching data.
+
+|fetchInfoThreshold
+|`100`
+|The threshold of the info log when fetching data.
+
+|fetchDebugThreshold
+|`50`
+|The threshold of the debug log when fetching data.
+
+|fetchTraceThreshold
+|`10`
+|The threshold of the trace log when fetching data.
+|===
+
+--------------------------
+repository:
+  index:
+    commitInterval: 5000
+    translogSyncInterval: 1000
+    queryWarnThreshold: 400
+    fetchInfoThreshold: 100
+--------------------------
+
 ==== RPC
 
 RPC is a custom protocol implementation used to solve request-response based communication between a client and a server.
@@ -828,6 +884,21 @@ rpc:
   compressed: false
 --------------------------
 
+==== Metrics
+
+Snow Owl can measure and report execution times (and other metrics in the future) of executed requests.
+
+[cols="3*", options="header"]
+|===
+|Name
+|Default
+|Description
+
+|enabled
+|`true`
+|`true`, `false`, `ON`, `OFF` - enable or disable metrics in the application
+|===
+
 ==== SNOMED CT
 
 Configuration of SNOMED CT terminology services.
@@ -845,11 +916,19 @@ language's reference set will be used runtime.
 
 |maxReasonerCount
 |`2`
-|The maximum number of reasoners available in the system for consumption. Minimum `1`, maximum `3` is allowed.
+|The maximum number of reasoners permitted to do computation simultaneously. Minimum `1`, maximum `3` is allowed. If the value is set to
+`1`, classification requests will be processed in a sequential fashion.
 
 |maxReasonerResults
 |`10`
-|The maximum number of reasoner results to keep. Minimum `1`, maximum `100` is allowed.
+|The number of inferred taxonomies that should be kept in memory after the reasoner completes the computational stage. The user can only 
+choose to save the results of the classification run if the corresponding taxonomy instance is still present.
+
+|maxReasonerRuns
+|`1000`
+|The number of classification runs of which details should be preserved on disk. Details include inferred and redundant relationships, 
+the list of equivalent concepts found during classification, and classification run metadata (start and end times, status, requesting user, 
+reasoner used for this run).
 
 |showReasonerUsageWarning
 |`true`
@@ -891,7 +970,7 @@ If omitted, then default strategy will be used.
 
 |strategy
 |INDEX
-|`MEMORY`, `INDEX`, `CIS` - The source of the ID generation.
+|`EMBEDDED`, `CIS` - The source of the ID generation.
 
 |cisBaseUrl
 |
@@ -928,9 +1007,11 @@ If omitted, then default strategy will be used.
 |cisMaxConnections
 |100
 |Maximum number of simultaneous connections that Snow Owl can make to the CIS host via HTTP.
+
+|maxIdGenerationAttempts
+|1000
+|Maximum number of attempts any non-CIS ID generator will take to generate a single SNOMED CT identifier, if exceeded it throws an exception.
 |===
-
-
 
 --------------------------
 snomed:

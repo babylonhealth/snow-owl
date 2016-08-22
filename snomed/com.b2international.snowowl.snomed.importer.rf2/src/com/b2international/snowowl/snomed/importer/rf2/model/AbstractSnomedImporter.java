@@ -47,15 +47,27 @@ import org.supercsv.io.CsvBeanReader;
 import org.supercsv.io.CsvListReader;
 import org.supercsv.io.CsvListWriter;
 
+import com.b2international.collections.PrimitiveMaps;
+import com.b2international.collections.longs.LongValueMap;
 import com.b2international.commons.FileUtils;
 import com.b2international.commons.StringUtils;
+import com.b2international.index.Hits;
+import com.b2international.index.query.Expression;
+import com.b2international.index.query.Expressions;
+import com.b2international.index.query.Query;
+import com.b2international.index.revision.RevisionIndex;
+import com.b2international.index.revision.RevisionIndexRead;
+import com.b2international.index.revision.RevisionSearcher;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.LogUtils;
+import com.b2international.snowowl.core.RepositoryManager;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
 import com.b2international.snowowl.core.config.SnowOwlConfiguration;
+import com.b2international.snowowl.core.date.DateFormats;
 import com.b2international.snowowl.core.date.Dates;
+import com.b2international.snowowl.core.date.EffectiveTimes;
 import com.b2international.snowowl.datastore.BranchPathUtils;
 import com.b2international.snowowl.datastore.CDOEditingContext;
 import com.b2international.snowowl.datastore.cdo.ICDOTransactionAggregator;
@@ -76,11 +88,14 @@ import com.b2international.snowowl.snomed.Relationship;
 import com.b2international.snowowl.snomed.SnomedConstants;
 import com.b2international.snowowl.snomed.SnomedPackage;
 import com.b2international.snowowl.snomed.common.ContentSubType;
+import com.b2international.snowowl.snomed.datastore.SnomedDatastoreActivator;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDocument;
 import com.b2international.snowowl.snomed.importer.rf2.CsvConstants;
 import com.b2international.snowowl.snomed.importer.rf2.csv.AbstractComponentRow;
 import com.b2international.snowowl.snomed.importer.rf2.csv.cellprocessor.ValidatingCellProcessor;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -109,6 +124,7 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 	/** A CDO transaction is committed when the number of processed elements % this value == 0. */
 	protected static final int COMMIT_EVERY_NUM_ELEMENTS = 50000;
 
+	private static final int ID_IDX = 0;
 	/** 0-based index of the {@code effectiveTime} column in release files. */
 	private static final int EFFECTIVE_TIME_IDX = 1;
 
@@ -260,26 +276,26 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 	 *<p>Could return with {@code null}.*/
 	protected abstract Date getComponentEffectiveTime(C editedComponent);
 	
-	protected boolean skipCurrentRow(final AbstractComponentRow currentRow, final C editedComponent) {
-		return skipCurrentRow(currentRow, getComponentEffectiveTime(editedComponent));		
+	protected boolean skipCurrentRow(final AbstractComponentRow rf2Row, final C existingComponent) {
+		return skipCurrentRow(rf2Row, getComponentEffectiveTime(existingComponent));		
 	}
 	
-	private boolean skipCurrentRow(final AbstractComponentRow currentRow, final Date editedComponentDate) {
-		return skipCurrentRow(currentRow.getEffectiveTime(), editedComponentDate);
+	private boolean skipCurrentRow(final AbstractComponentRow rf2Row, final Date existingComponentDate) {
+		return skipCurrentRow(rf2Row.getEffectiveTime(), existingComponentDate);
 	}
 	
-	private boolean skipCurrentRow(final Date currentRowDate, final Date editedComponentDate) {
+	private boolean skipCurrentRow(final Date rf2RowDate, final Date existingComponentDate) {
 		
 		/*
 		 * The RF2 row has to be imported if either the current component is unpublished, or the incoming row has no effective
 		 * date set.
 		 */
-		if (editedComponentDate == null) {
+		if (existingComponentDate == null) {
 			return false;
-		} else if (currentRowDate == null) {
+		} else if (rf2RowDate == null) {
 			return false;
 		} else {
-			return editedComponentDate.getTime() >= currentRowDate.getTime();
+			return existingComponentDate.getTime() >= rf2RowDate.getTime();
 		}
 	}
 	
@@ -294,6 +310,7 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 		final InputStreamReader releaseFileReader = new InputStreamReader(releaseFileStream, CsvConstants.IHTSDO_CHARSET);
 		final CsvListReader releaseFileListReader = new CsvListReader(releaseFileReader, CsvConstants.IHTSDO_CSV_PREFERENCE);
 
+		
 		try {
 			
 			final String[] actualHeader = releaseFileListReader.getCSVHeader(true);
@@ -303,6 +320,7 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 			}
 			
 			final CellProcessor[] validatingCellProcessors = createValidatingCellProcessors();
+			final LongValueMap<String> availableComponentsAndEffectiveTimes = getAvailableComponents();
 			
 			while (true) {
 				
@@ -325,7 +343,17 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 					break;
 				}
 				
+				final String id = row.get(ID_IDX);
 				final String effectiveTimeString = row.get(EFFECTIVE_TIME_IDX);
+				final Date rf2RowDate = Strings.isNullOrEmpty(effectiveTimeString) ? null : EffectiveTimes.parse(effectiveTimeString, DateFormats.SHORT);
+				
+				if (availableComponentsAndEffectiveTimes.containsKey(id)) {
+					final Date existingComponentDate = EffectiveTimes.toDate(availableComponentsAndEffectiveTimes.get(id));
+					if (skipCurrentRow(rf2RowDate, existingComponentDate)) {
+						continue;
+					}
+				}
+				
 				final ComponentImportEntry importEntry = getOrCreateImportEntry(importEntries, effectiveTimeString);
 				importEntry.getWriter().write(row);
 				importEntry.increaseRecordCount();
@@ -348,6 +376,40 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 		}
 
 		return createImportUnits(importEntries);
+	}
+
+	protected final LongValueMap<String> getAvailableComponents() {
+		final String branch = getImportContext().getEditingContext().getBranch();
+		return getIndex().read(branch, new RevisionIndexRead<LongValueMap<String>>() {
+			@Override
+			public LongValueMap<String> execute(RevisionSearcher index) throws IOException {
+				final Query<? extends SnomedDocument> query = Query.select(getType())
+						.where(getAvailableComponentQuery())
+						.limit(Integer.MAX_VALUE)
+						.build();
+				final Hits<? extends SnomedDocument> hits = index.search(query);
+				final int totalHits = hits.getTotal();
+				if (totalHits <= 0) {
+					return PrimitiveMaps.newObjectKeyLongOpenHashMap();
+				} else {
+					final LongValueMap<String> result = PrimitiveMaps.newObjectKeyLongOpenHashMapWithExpectedSize(totalHits);
+					for (SnomedDocument hit : hits) {
+						result.put(hit.getId(), hit.getEffectiveTime());
+					}
+					return result;
+				}
+			}
+		});
+	}
+	
+	protected Expression getAvailableComponentQuery() {
+		return Expressions.matchAll();
+	}
+
+	protected abstract Class<? extends SnomedDocument> getType();
+
+	private RevisionIndex getIndex() {
+		return ApplicationContext.getInstance().getService(RepositoryManager.class).get(SnomedDatastoreActivator.REPOSITORY_UUID).service(RevisionIndex.class);
 	}
 
 	private ImportAction checkHeaders(final String[] expectedHeader, final String[] actualHeader) {
@@ -551,7 +613,7 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 
 	protected String getCommitMessage(final String effectiveTimeKey) {
 		if (!UNPUBLISHED_KEY.equals(effectiveTimeKey)) {
-			return MessageFormat.format("Imported SNOMED CT components with effective {0} from {1} release.", effectiveTimeKey, importContext.getContentSubType().getLowerCaseName());
+			return MessageFormat.format("Imported SNOMED CT components with effective time {0} from {1} release.", effectiveTimeKey, importContext.getContentSubType().getLowerCaseName());
 		} else {
 			return MessageFormat.format("Imported unpublished SNOMED CT components from {0} release.", importContext.getContentSubType().getLowerCaseName());
 		}
@@ -580,6 +642,7 @@ public abstract class AbstractSnomedImporter<T extends AbstractComponentRow, C e
 			
 			new CDOServerCommitBuilder(importContext.getUserId(), message, aggregator)
 					.sendCommitNotification(importContext.isCommitNotificationEnabled())
+					.notifyWriteAccessHandlers(importContext.isCommitNotificationEnabled())
 					.parentContextDescription(DatastoreLockContextDescriptions.IMPORT)
 					.commit();
 			

@@ -22,9 +22,11 @@ import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
 import com.b2international.commons.platform.PlatformUtil;
-import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
+import com.b2international.snowowl.snomed.api.impl.SnomedReleases;
+import com.b2international.snowowl.snomed.api.japi.branches.SnomedBranchRequestTest;
 import com.b2international.snowowl.snomed.api.rest.branches.SnomedBranchingApiTest;
 import com.b2international.snowowl.snomed.api.rest.branches.SnomedMergeApiTest;
+import com.b2international.snowowl.snomed.api.rest.branches.SnomedMergeConflictTest;
 import com.b2international.snowowl.snomed.api.rest.branches.SnomedReviewApiTest;
 import com.b2international.snowowl.snomed.api.rest.browser.SnomedBrowserApiTest;
 import com.b2international.snowowl.snomed.api.rest.classification.SnomedClassificationApiTest;
@@ -34,6 +36,7 @@ import com.b2international.snowowl.snomed.api.rest.components.SnomedRefSetApiTes
 import com.b2international.snowowl.snomed.api.rest.components.SnomedRefSetBulkApiTest;
 import com.b2international.snowowl.snomed.api.rest.components.SnomedRefSetMemberApiTest;
 import com.b2international.snowowl.snomed.api.rest.components.SnomedRelationshipApiTest;
+import com.b2international.snowowl.snomed.api.rest.components.SnomedReleasedConceptApiTest;
 import com.b2international.snowowl.snomed.api.rest.id.SnomedIdentifierApiTest;
 import com.b2international.snowowl.snomed.api.rest.io.SnomedImportApiExamplesTest;
 import com.b2international.snowowl.snomed.api.rest.io.SnomedImportApiTest;
@@ -49,29 +52,33 @@ import com.b2international.snowowl.test.commons.SnowOwlAppRule;
  */
 @RunWith(Suite.class)
 @SuiteClasses({ 
+	// RESTful API test cases
 	SnomedBranchingApiTest.class,
 	SnomedMergeApiTest.class,
+	SnomedMergeConflictTest.class,
 	SnomedReviewApiTest.class,
 	SnomedVersioningApiTest.class,
 	SnomedImportApiTest.class,
 	SnomedImportApiExamplesTest.class,
 	SnomedIdentifierApiTest.class,
 	SnomedConceptApiTest.class,
+	SnomedReleasedConceptApiTest.class,
 	SnomedDescriptionApiTest.class,
 	SnomedRelationshipApiTest.class,
 	SnomedRefSetApiTest.class,
 	SnomedRefSetMemberApiTest.class,
 	SnomedRefSetBulkApiTest.class,
 	SnomedBrowserApiTest.class,
-	// XXX reenable classification tests when we bumped owlapi to at least 3.4.4
-//	SnomedClassificationApiTest.class
+	SnomedClassificationApiTest.class,
+	// Java API test cases
+	SnomedBranchRequestTest.class
 })
 public class AllSnomedApiTests {
-
+	
 	@ClassRule
 	public static final RuleChain appRule = RuleChain
 			.outerRule(SnowOwlAppRule.snowOwl().clearResources(true).config(PlatformUtil.toAbsolutePath(AllSnomedApiTests.class, "rest-configuration.yml")))
 			.around(new BundleStartRule("com.b2international.snowowl.api.rest"))
 			.around(new BundleStartRule("com.b2international.snowowl.snomed.api.rest"))
-			.around(new SnomedContentRule(Resources.Snomed.MINI_RF2_INT, Concepts.REFSET_LANGUAGE_TYPE_UK, ContentSubType.FULL));
+			.around(new SnomedContentRule(SnomedReleases.newSnomedInternationalRelease(), Resources.Snomed.MINI_RF2_INT, ContentSubType.FULL));
 }

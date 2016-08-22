@@ -15,7 +15,6 @@
  */
 package com.b2international.snowowl.datastore;
 
-import static com.b2international.snowowl.datastore.BranchPathUtils.createVersionPath;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.Serializable;
@@ -56,6 +55,12 @@ public interface ICodeSystemVersion extends Serializable {
 	Date FAKE_LAST_UPDATE_TIME_DATE = new Date(Dates.MIN_DATE_LONG);
 	
 	/**
+	 * Get the code system short name where this version belongs to.
+	 * @return
+	 */
+	String getCodeSystemShortName();
+	
+	/**
 	 * Returns with the import date time.
 	 * @return the import date time.
 	 */
@@ -73,7 +78,7 @@ public interface ICodeSystemVersion extends Serializable {
 	 * yet. 
 	 * @return the last update date of the current version.
 	 */
-	long getLastUpdateDate();
+	long getLatestUpdateDate();
 	
 	/**
 	 * Returns with the description of the version.
@@ -86,6 +91,18 @@ public interface ICodeSystemVersion extends Serializable {
 	 * @return the version ID.
 	 */
 	String getVersionId();
+	
+	/**
+	 * Returns the parent branch path where the version branch is forked off
+	 * @return parent branch path
+	 */
+	String getParentBranchPath();
+	
+	/**
+	 * Returns the full path of this version including the MAIN prefix as well as the version tag.
+	 * @return
+	 */
+	String getPath();
 	
 	/**
 	 * Returns with {@code true} if any modifications have been made on 
@@ -139,7 +156,7 @@ public interface ICodeSystemVersion extends Serializable {
 	 *{@link IBranchPath} instance with the {@link BranchPathUtils#createVersionPath(String)} method. */
 	Function<ICodeSystemVersion, IBranchPath> TO_BRANCH_PATH_FUNC = new Function<ICodeSystemVersion, IBranchPath>() {
 		public IBranchPath apply(final ICodeSystemVersion version) {
-			return createVersionPath(version.getVersionId());
+			return BranchPathUtils.createPath(version.getPath());
 		}
 	};
 
@@ -175,5 +192,5 @@ public interface ICodeSystemVersion extends Serializable {
 			return Longs.compare(time1, time2);
 		}
 	}
-	
+
 }

@@ -19,6 +19,7 @@ import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.net4j.signal.SignalProtocol;
 import org.eclipse.net4j.util.io.ExtendedDataOutputStream;
 
+import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.Net4jProtocolConstants;
 import com.b2international.snowowl.datastore.net4j.AbstractExportRequest;
 import com.b2international.snowowl.snomed.SnomedPackage;
@@ -33,17 +34,14 @@ public class SnomedRefSetExcelExportClientRequest extends AbstractExportRequest 
 	
 	private final SnomedRefSetExcelExportModel model;
 
-	public SnomedRefSetExcelExportClientRequest(final SignalProtocol<?> protocol, final SnomedRefSetExcelExportModel model) {
-		super(protocol, Net4jProtocolConstants.SNOMED_EXPORT_REFSET_TO_EXCEL_SIGNAL, model.getExportPath());
+	public SnomedRefSetExcelExportClientRequest(final SignalProtocol<?> protocol, final IBranchPath branchPath, final SnomedRefSetExcelExportModel model) {
+		super(protocol, Net4jProtocolConstants.SNOMED_EXPORT_REFSET_TO_EXCEL_SIGNAL, branchPath, model.getExportPath());
 		this.model = model;
 	}
 	
 	@Override
 	protected void postRequesting(ExtendedDataOutputStream out) throws Exception {
-
 		out.writeUTF(model.getRefSetId());
-		out.writeShort(model.getReferencedComponentType());
-		
 	}
 
 	@Override

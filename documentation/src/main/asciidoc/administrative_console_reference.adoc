@@ -261,7 +261,7 @@ Impersonate operation as: info@b2international.com
 
 === List all imported terminologies
 
-`terminologyregistry listall` displays information about terminologies imported into the running server instance, 
+`terminologyregistry listall` displays information about terminologies and terminology extensions imported into the running server instance, 
 including individual local code systems.
 
 --------------------------
@@ -539,17 +539,56 @@ Impersonate operation as: info@b2international.com
 
 == Diagnostics and maintenance
 
-=== Service registration check
+`snowowl listrepositories` prints all the repositories in the system.
+....
+osgi> snowowl listrepositories
+Repositories:
+	snomedStore
+....
+`snowowl listbranches [repository]` prints all the branches in the system for a repository.
 
-`snowowl checkservices` enumerates all registered services of the instance, and makes sure that there is a working 
-service implementation for all tooling components. An error will be reported if a service registration failed during startup.
+....
+osgi> snowowl listbranches snomedStore
+Branches for repository snomedStore:
+|---MAIN
+    |---2011-10-01
+    |---2012-01-31
+    |---2012-07-31
+    |---2013-01-31
+    |---2013-07-31
+    |---2014-01-31
+    |---2014-07-31
+    |---2015-01-31
+        |---SNOMED-CT-SE
+            |---2012-12-21
+            |---2013-05-31
+            |---2013-11-30
+            |---2014-05-31
+            |---2014-11-30
+            |---2015-05-31
+    |---2015-07-31
+    |---2016-01-31
+        |---SNOMED-CT-SE
+....
 
---------------------------
-osgi> snowowl checkservices
+`snowowl dbcreateindex [nsUri]` creates the CDO_CREATED index on the proper DB tables for all classes contained by a package identified by its unique namspace URI.
 
-...
-Core services are registered properly and available for use.
---------------------------
+`snowowl reindex [repositoryId]` recreates the entire index for the content of the given repository.  This long-running process requires the the server to be shut-down, the index to be deleted manually and a restart before invoking this command.
+....
+osgi>snowowl reindex snomedStore
+....
+
+`snowowl optimize [repositoryId] [maxSegments]` optimizes the underlying index for the repository to have the supplied maximum number of segments (default number is 1).
+
+....
+osgi>snowowl optimize snomedStore 6
+....
+
+`snowowl purge <repositoryId> <branchPath> <purgeStrategy>` optimizes the underlying index by deleting unnecessary documents from the given branch using the given purge strategy (default strategy is LATEST, available strategies are ALL, LATEST, HISTORY)
+
+....
+osgi>snowowl purge snomedStore MAIN/2016-01-31 ALL
+....
 
 == Session management
 

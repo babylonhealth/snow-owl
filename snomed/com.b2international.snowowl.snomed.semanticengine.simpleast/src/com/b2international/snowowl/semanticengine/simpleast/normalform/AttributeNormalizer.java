@@ -21,8 +21,6 @@ import java.util.Collection;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 
 import com.b2international.snowowl.semanticengine.simpleast.utils.QueryAstUtils;
-import com.b2international.snowowl.snomed.datastore.SnomedClientStatementBrowser;
-import com.b2international.snowowl.snomed.datastore.SnomedClientTerminologyBrowser;
 import com.b2international.snowowl.snomed.dsl.query.queryast.AttributeClause;
 import com.b2international.snowowl.snomed.dsl.query.queryast.ConceptRef;
 import com.b2international.snowowl.snomed.dsl.query.queryast.RValue;
@@ -43,12 +41,10 @@ import com.b2international.snowowl.snomed.dsl.query.queryast.ecoreastFactory;
  */
 public class AttributeNormalizer {
 	
-	private final SnomedClientTerminologyBrowser terminologyBrowser;
 	private final SimpleAstExpressionNormalFormGenerator normalFormGenerator;
 	
-	public AttributeNormalizer(SnomedClientTerminologyBrowser terminologyBrowser, SnomedClientStatementBrowser statementBrowser) {
-		this.terminologyBrowser = terminologyBrowser;
-		normalFormGenerator = new SimpleAstExpressionNormalFormGenerator(terminologyBrowser, statementBrowser);
+	public AttributeNormalizer(String branch) {
+		normalFormGenerator = new SimpleAstExpressionNormalFormGenerator(branch);
 	}
 
 	/**

@@ -35,11 +35,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.b2international.commons.concurrent.equinox.ForkJoinUtils;
+import com.b2international.commons.status.Statuses;
 import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.LogUtils;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
+import com.b2international.snowowl.core.events.metrics.Metrics;
+import com.b2international.snowowl.core.events.metrics.MetricsThreadLocal;
 import com.b2international.snowowl.core.exceptions.ApiException;
 import com.b2international.snowowl.datastore.BranchPathUtils;
 import com.b2international.snowowl.datastore.ICDOChangeProcessor;
@@ -71,8 +74,6 @@ public class DelegateCDOServerChangeManager {
 	private final IBranchPath branchPath;
 	private final String repositoryUuid;
 	
-	private final boolean copySession;
-	
 	private @Nullable IOperationLockTarget lockTarget;
 	private @Nullable Collection<ICDOChangeProcessor> changeProcessors;
 	
@@ -82,7 +83,6 @@ public class DelegateCDOServerChangeManager {
 		this.repositoryUuid = ApplicationContext.getInstance().getService(ICDOConnectionManager.class).get(view).getUuid();
 		this.branchPath = BranchPathUtils.createPath(view);
 		this.factories = Preconditions.checkNotNull(factories, "CDO change processor factories argument cannot be null.");
-		this.copySession = copySession;
 	}
 	
 	public ICDOCommitChangeSet getCommitChangeSet() {
@@ -98,47 +98,33 @@ public class DelegateCDOServerChangeManager {
 		try {
 			
 			lockBranch();
-			createProcessors(branchPath, copySession);
+			createProcessors(branchPath);
 			
 			final Collection<Job> changeProcessingJobs = Sets.newHashSetWithExpectedSize(changeProcessors.size());
-			
-			//copy the session for all threads.
-			//used for loading objects.
-			final AtomicReference<InternalSession> session = new AtomicReference<InternalSession>();
-			if (copySession) {
-				session.set(StoreThreadLocal.getSession());
-			}
+			final InternalSession session = StoreThreadLocal.getSession();
+			final Metrics metrics = MetricsThreadLocal.get();
 			
 			for (final ICDOChangeProcessor processor : changeProcessors) {
 				
 				changeProcessingJobs.add(new Job("Processing commit information with " + processor.getName()) {
-					
-					@Override public IStatus run(final IProgressMonitor monitor) {
+					@Override 
+					public IStatus run(final IProgressMonitor monitor) {
 						
 						try {
+							StoreThreadLocal.setSession(session);
+							MetricsThreadLocal.set(metrics);
 							
-							if (copySession) {
-								StoreThreadLocal.setSession(session.get());
-							}
-							
-							try {
-								processor.process(commitChangeSet);
-								return Status.OK_STATUS;
-							} catch (final Exception e) {
-								return new Status(IStatus.ERROR, DatastoreServerActivator.PLUGIN_ID, "Error while processing changes with " + processor.getName() + " for branch: " + branchPath, e);
-							}
-							
+							processor.process(commitChangeSet);
+							return Statuses.ok();
+						} catch (final Exception e) {
+							return Statuses.error(DatastoreServerActivator.PLUGIN_ID, "Error while processing changes with " + processor.getName() + " for branch: " + branchPath, e);
 						} finally {
-
 							//release session for all threads
-							if (copySession) {
-								StoreThreadLocal.release();
-							}
-							
+							StoreThreadLocal.release();
+							MetricsThreadLocal.release();
 						}
 					}
 				});
-			
 			}
 
 			ForkJoinUtils.runJobsInParallelWithErrorHandling(changeProcessingJobs, null);
@@ -199,6 +185,7 @@ public class DelegateCDOServerChangeManager {
 		final Collection<ICDOChangeProcessor> committedChangeProcessors = newConcurrentHashSet();
 		
 		try {
+			final Metrics metrics = MetricsThreadLocal.get();
 			
 			final Collection<Job> commitJobs = Sets.newHashSetWithExpectedSize(changeProcessors.size());
 			
@@ -207,6 +194,7 @@ public class DelegateCDOServerChangeManager {
 					
 					@Override protected IStatus run(final IProgressMonitor monitor) {
 						try {
+							MetricsThreadLocal.set(metrics);
 							
 							//log if anything had changed
 							if (processor.hadChangesToProcess()) {
@@ -233,6 +221,8 @@ public class DelegateCDOServerChangeManager {
 								return new Status(IStatus.ERROR, DatastoreServerActivator.PLUGIN_ID, "Error while rolling back changes in " + processor.getName() + " for branch: " + branchPath, ee);
 							}
 							return new Status(IStatus.ERROR, DatastoreServerActivator.PLUGIN_ID, "Error while committing changes with " + processor.getName() + " for branch: " + branchPath, e);
+						} finally {
+							MetricsThreadLocal.release();
 						}
 					}
 				});
@@ -310,7 +300,7 @@ public class DelegateCDOServerChangeManager {
 	}
 	
 	/*initialize all the change processors created via the registered change processor factories.*/
-	private void createProcessors(final IBranchPath branchPath, final boolean copySession) throws Exception {
+	private void createProcessors(final IBranchPath branchPath) throws Exception {
 		
 		changeProcessors = null;
 		final List<ICDOChangeProcessor> processors = new CopyOnWriteArrayList<ICDOChangeProcessor>();
@@ -322,7 +312,7 @@ public class DelegateCDOServerChangeManager {
 				
 				@Override protected IStatus run(final IProgressMonitor monitor) {
 					try {
-						processors.add(factory.createChangeProcessor(branchPath, copySession));
+						processors.add(factory.createChangeProcessor(branchPath));
 						return Status.OK_STATUS;
 					} catch (final SnowowlServiceException e) {
 						final StringBuilder messageBuilder = new StringBuilder("Error while creating change processor for ").append(factory.getFactoryName()).append(" on ").append(branchPath).append(".");

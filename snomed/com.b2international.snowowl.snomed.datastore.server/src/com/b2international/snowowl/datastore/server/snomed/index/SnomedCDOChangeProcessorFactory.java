@@ -15,39 +15,33 @@
  */
 package com.b2international.snowowl.datastore.server.snomed.index;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
+import com.b2international.index.revision.RevisionIndex;
 import com.b2international.snowowl.core.ApplicationContext;
+import com.b2international.snowowl.core.RepositoryManager;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
 import com.b2international.snowowl.datastore.ICDOChangeProcessor;
-import com.b2international.snowowl.datastore.server.index.CDOChangeIndexProcessorFactory;
-import com.b2international.snowowl.datastore.server.snomed.index.init.ImportIndexServerService;
+import com.b2international.snowowl.datastore.server.CDOChangeProcessorFactory;
+import com.b2international.snowowl.snomed.datastore.SnomedDatastoreActivator;
+import com.b2international.snowowl.snomed.datastore.id.ISnomedIdentifierService;
 
 /**
  * CDO change processor factory responsible to create {@link SnomedCDOChangeProcessor change processors} for SNOMED CT terminology.
  */
-public class SnomedCDOChangeProcessorFactory extends CDOChangeIndexProcessorFactory {
+public class SnomedCDOChangeProcessorFactory implements CDOChangeProcessorFactory {
 
 	private static final String FACTORY_NAME = "SNOMED CT change processor factory";
-	static final ExecutorService CHANGE_PROC_EXECUTOR = Executors.newFixedThreadPool(8);
 
 	@Override
-	protected ICDOChangeProcessor doCreateChangeProcessor(final IBranchPath branchPath, final boolean canCopyThreadLocal) throws SnowowlServiceException {
-		
-		//SNOMED CT import is in progress
-		if (ApplicationContext.getInstance().exists(ImportIndexServerService.class)) {
-			return new SnomedImportCDOChangeProcessor(ApplicationContext.getInstance().getService(ImportIndexServerService.class), branchPath, canCopyThreadLocal); 
-		}
-		
-		final SnomedIndexUpdater indexService = ApplicationContext.getInstance().getService(SnomedIndexUpdater.class);
-		return new SnomedCDOChangeProcessor(CHANGE_PROC_EXECUTOR, indexService, branchPath, canCopyThreadLocal);
+	public ICDOChangeProcessor createChangeProcessor(final IBranchPath branchPath) throws SnowowlServiceException {
+		final ApplicationContext context = ApplicationContext.getInstance();
+		final RevisionIndex index = context.getService(RepositoryManager.class).get(SnomedDatastoreActivator.REPOSITORY_UUID).service(RevisionIndex.class);
+		final ISnomedIdentifierService identifierService = context.getService(ISnomedIdentifierService.class);
+		return new SnomedCDOChangeProcessor(branchPath, index, identifierService);
 	}
 
 	@Override
 	public String getFactoryName() {
 		return FACTORY_NAME;
 	}
-
 }

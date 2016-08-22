@@ -18,125 +18,81 @@ package com.b2international.snowowl.datastore.server.snomed.index;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Maps.newHashMap;
 import static com.google.common.collect.Sets.newHashSet;
-import static com.google.common.collect.Sets.newHashSetWithExpectedSize;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Filter;
-import org.apache.lucene.search.FilteredQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PrefixQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.BytesRef;
 import org.eclipse.emf.cdo.CDOObject;
 import org.eclipse.emf.cdo.common.id.CDOID;
-import org.eclipse.emf.cdo.common.id.CDOIDUtil;
 import org.eclipse.emf.cdo.common.revision.delta.CDOFeatureDelta;
 import org.eclipse.emf.cdo.server.IStoreAccessor;
 import org.eclipse.emf.cdo.server.StoreThreadLocal;
 import org.eclipse.emf.cdo.spi.common.revision.InternalCDORevision;
-import org.eclipse.emf.ecore.EClass;
 import org.eclipse.emf.spi.cdo.CDOStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.b2international.commons.CompareUtils;
-import com.b2international.commons.Pair;
+import com.b2international.collections.PrimitiveSets;
+import com.b2international.collections.longs.LongSet;
 import com.b2international.commons.StringUtils;
 import com.b2international.commons.concurrent.equinox.ForkJoinUtils;
-import com.b2international.commons.pcj.LongSets;
+import com.b2international.index.query.Expressions;
+import com.b2international.index.query.Query;
+import com.b2international.index.revision.Revision;
+import com.b2international.index.revision.RevisionIndex;
+import com.b2international.index.revision.RevisionIndexRead;
+import com.b2international.index.revision.RevisionIndexWrite;
+import com.b2international.index.revision.RevisionSearcher;
+import com.b2international.index.revision.RevisionWriter;
 import com.b2international.snowowl.core.ApplicationContext;
-import com.b2international.snowowl.core.api.ComponentIdAndLabel;
-import com.b2international.snowowl.core.api.ExtendedComponent;
+import com.b2international.snowowl.core.api.ComponentUtils;
 import com.b2international.snowowl.core.api.IBranchPath;
-import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
-import com.b2international.snowowl.core.api.index.IIndexUpdater;
-import com.b2international.snowowl.datastore.ChangeSetProcessor;
+import com.b2international.snowowl.core.events.metrics.MetricsThreadLocal;
+import com.b2international.snowowl.core.events.metrics.Timer;
+import com.b2international.snowowl.core.ft.FeatureToggles;
+import com.b2international.snowowl.datastore.CodeSystemEntry;
+import com.b2international.snowowl.datastore.CodeSystemVersionEntry;
 import com.b2international.snowowl.datastore.ICDOChangeProcessor;
 import com.b2international.snowowl.datastore.ICDOCommitChangeSet;
 import com.b2international.snowowl.datastore.cdo.CDOIDUtils;
-import com.b2international.snowowl.datastore.cdo.ICDOConnection;
-import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
-import com.b2international.snowowl.datastore.index.AbstractIndexUpdater;
-import com.b2international.snowowl.datastore.index.ChangeSetProcessorBase;
-import com.b2international.snowowl.datastore.index.DocIdCollector;
-import com.b2international.snowowl.datastore.index.DocIdCollector.DocIdsIterator;
-import com.b2international.snowowl.datastore.index.DocumentCompositeUpdater;
-import com.b2international.snowowl.datastore.index.DocumentUpdater;
-import com.b2international.snowowl.datastore.index.IndexRead;
-import com.b2international.snowowl.datastore.index.mapping.LongIndexField;
-import com.b2international.snowowl.datastore.index.mapping.Mappings;
+import com.b2international.snowowl.datastore.index.ChangeSetProcessor;
+import com.b2international.snowowl.datastore.index.RevisionDocument;
 import com.b2international.snowowl.datastore.server.CDOServerUtils;
-import com.b2international.snowowl.datastore.server.snomed.index.change.ComponentLabelChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.ConceptChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.ConceptReferringMemberChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.ConstraintChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.DescriptionAcceptabilityChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.DescriptionChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.IconChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.RefSetMapTargetUpdateChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.RefSetMemberChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.RelationshipChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.change.TaxonomyChangeProcessor;
-import com.b2international.snowowl.datastore.server.snomed.index.collector.ComponentIdCollector;
-import com.b2international.snowowl.snomed.Component;
+import com.b2international.snowowl.datastore.server.reindex.ReindexRequest;
 import com.b2international.snowowl.snomed.Concept;
 import com.b2international.snowowl.snomed.Relationship;
-import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
 import com.b2international.snowowl.snomed.SnomedPackage;
-import com.b2international.snowowl.snomed.datastore.SnomedTerminologyBrowser;
-import com.b2international.snowowl.snomed.datastore.StatementCollectionMode;
+import com.b2international.snowowl.snomed.core.domain.CharacteristicType;
+import com.b2international.snowowl.snomed.datastore.SnomedDatastoreActivator;
+import com.b2international.snowowl.snomed.datastore.SnomedIconProvider;
 import com.b2international.snowowl.snomed.datastore.id.ISnomedIdentifierService;
-import com.b2international.snowowl.snomed.datastore.index.SnomedIndexService;
-import com.b2international.snowowl.snomed.datastore.index.SnomedRelationshipIndexQueryAdapter;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedIndexEntry;
+import com.b2international.snowowl.snomed.datastore.index.change.ConceptChangeProcessor;
+import com.b2international.snowowl.snomed.datastore.index.change.ConstraintChangeProcessor;
+import com.b2international.snowowl.snomed.datastore.index.change.DescriptionChangeProcessor;
+import com.b2international.snowowl.snomed.datastore.index.change.RefSetMemberChangeProcessor;
+import com.b2international.snowowl.snomed.datastore.index.change.RelationshipChangeProcessor;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptDocument;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDescriptionIndexEntry;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDocument;
 import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRelationshipIndexEntry;
-import com.b2international.snowowl.snomed.datastore.index.mapping.SnomedDocumentBuilder;
-import com.b2international.snowowl.snomed.datastore.index.mapping.SnomedMappings;
-import com.b2international.snowowl.snomed.datastore.index.mapping.SnomedQueryBuilder;
-import com.b2international.snowowl.snomed.datastore.taxonomy.ISnomedTaxonomyBuilder;
-import com.b2international.snowowl.snomed.datastore.taxonomy.ISnomedTaxonomyBuilder.TaxonomyBuilderEdge;
-import com.b2international.snowowl.snomed.datastore.taxonomy.ISnomedTaxonomyBuilder.TaxonomyBuilderNode;
-import com.b2international.snowowl.snomed.datastore.taxonomy.SnomedTaxonomyBuilder;
-import com.b2international.snowowl.snomed.datastore.taxonomy.SnomedTaxonomyBuilderRunnable;
-import com.b2international.snowowl.snomed.datastore.taxonomy.TaxonomyProvider;
+import com.b2international.snowowl.snomed.datastore.taxonomy.Taxonomies;
+import com.b2international.snowowl.snomed.datastore.taxonomy.Taxonomy;
 import com.b2international.snowowl.terminologymetadata.CodeSystem;
 import com.b2international.snowowl.terminologymetadata.CodeSystemVersion;
 import com.b2international.snowowl.terminologymetadata.TerminologymetadataPackage;
-import com.b2international.snowowl.terminologyregistry.core.index.CodeSystemIndexMappingStrategy;
-import com.b2international.snowowl.terminologyregistry.core.index.CodeSystemVersionIndexMappingStrategy;
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.LinkedHashMultimap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-
-import bak.pcj.LongCollection;
-import bak.pcj.list.LongArrayList;
-import bak.pcj.list.LongList;
-import bak.pcj.set.LongSet;
 
 /**
  * Change processor implementation for SNOMED&nbsp;CT ontology. This class is responsible for updating indexes based on the new, dirty and detached components 
@@ -146,153 +102,66 @@ import bak.pcj.set.LongSet;
  */
 public class SnomedCDOChangeProcessor implements ICDOChangeProcessor {
 
-	private static final Set<String> MEMBER_FIELD_TO_LOAD = SnomedMappings.fieldsToLoad()
-			.active()
-			.memberReferencedComponentId()
-			.memberRefSetId()
-			.memberRefSetType()
-			.memberAcceptabilityId()
-			.memberUuid()
-			.build();
-
 	private static final Logger LOGGER = LoggerFactory.getLogger(SnomedCDOChangeProcessor.class);
 	
-	private static Function<Component, String> GET_SCT_ID_FUNCTION = new Function<Component, String>() {
-		@Override public String apply(final Component component) {
-			return Preconditions.checkNotNull(component, "Component argument cannot be null.").getId();
-		}
-	};
-
 	private final Set<CodeSystem> newCodeSystems = newHashSet();
+	private final Set<CodeSystem> dirtyCodeSystems = newHashSet();
 	private final Set<CodeSystemVersion> newCodeSystemVersions = newHashSet();
 	private final Set<CodeSystemVersion> dirtyCodeSystemVersions = newHashSet();
 	
-	//the collection of the new artefacts in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> newConceptLogEntries = Collections.synchronizedSet(Sets.<ComponentIdAndLabel>newHashSet());
-	
-	//the collection of the deleted artefacts in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> deletedConceptLogEntries = Sets.newHashSet();
-	
-	//the collection of the changed artefacts in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> changedConceptLogEntries = Sets.newHashSet();
-	
-	//the collection of the new refset in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> newRefsetLogEntries = Sets.newHashSet();
-	
-	//the collection of the changed refset in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> changedRefSetLogEntries = Sets.newHashSet();
-	
-	//the collection of the deleted refset in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> deletedRefSetLogEntries = Sets.newHashSet();
-	
-	//the collection of the deleted constraints in a minimalistic form. Used for logging.
-	private final Set<ComponentIdAndLabel> deletedConstraintLogEntries = Sets.newHashSet();
-	
-	private final SnomedIndexServerService index;
 	private final IBranchPath branchPath;
-	private final Supplier<ISnomedTaxonomyBuilder> inferredNewTaxonomyBuilderSupplier;
-	private final Supplier<ISnomedTaxonomyBuilder> inferredPreviousTaxonomyBuilderSupplier;
+	private final ISnomedIdentifierService identifierService;
+	private final RevisionIndex index;
 	
-	private final Supplier<ISnomedTaxonomyBuilder> statedNewTaxonomyBuilderSupplier;
-	private final Supplier<ISnomedTaxonomyBuilder> statedPreviousTaxonomyBuilderSupplier;
-	
-	/**Supplies the different between the previous and current state of the ontology.
-	 *<br>Assumes initialized taxonomy builders.*/
-	private final Supplier<Pair<LongSet,LongSet>> inferredDifferenceSupplier;
-	private final Supplier<Pair<LongSet,LongSet>> statedDifferenceSupplier;
-	
-	/**
-	 * Flag indicating whether the {@link StoreThreadLocal#getSession()} can be copied or not. 
-	 */
-	private final boolean canCopyThreadLocal;
+	private Taxonomy inferredTaxonomy;
+	private Taxonomy statedTaxonomy;
 	
 	/**Represents the change set.*/
 	private ICDOCommitChangeSet commitChangeSet;
 
-	private ExecutorService executor;
+	private Map<String, Object> rawMappings = newHashMap();
+	private Map<Long, Revision> revisionMappings = newHashMap();
 	
-	/**
-	 * Creates a new change processor for the SNOMED&nbsp;CT ontology. 
-	 * @param indexUpdater the index updater for the SNOMED&nbsp;CT ontology.
-	 * @param branchPath the branch path where the changes has to be calculated and processed.
-	 * @param canCopyThreadLocal 
-	 */
-	public SnomedCDOChangeProcessor(final ExecutorService executor, final IIndexUpdater<SnomedIndexEntry> indexUpdater, final IBranchPath branchPath, final boolean canCopyThreadLocal) {
-		
-		Preconditions.checkNotNull(indexUpdater, "Index service argument cannot be null.");
-		Preconditions.checkArgument(indexUpdater instanceof AbstractIndexUpdater, "Index updater must be instance of " + AbstractIndexUpdater.class + ". Was " + indexUpdater.getClass());
+	private Multimap<Class<? extends Revision>, Long> deletions = HashMultimap.create();
 
-		this.index = (SnomedIndexServerService) indexUpdater; 
+	SnomedCDOChangeProcessor(final IBranchPath branchPath, final RevisionIndex index, final ISnomedIdentifierService identifierService) {
+		this.index = index;
 		this.branchPath = Preconditions.checkNotNull(branchPath, "Branch path argument cannot be null.");
-		this.canCopyThreadLocal = canCopyThreadLocal;
-		this.executor = executor;
-		
-		inferredNewTaxonomyBuilderSupplier = Suppliers.memoize(new Supplier<ISnomedTaxonomyBuilder>() {
-			@Override public ISnomedTaxonomyBuilder get() {
-				return new SnomedTaxonomyBuilder(branchPath, StatementCollectionMode.INFERRED_ISA_ONLY);
-			}
-		});
-		
-		inferredPreviousTaxonomyBuilderSupplier = Suppliers.memoize(new Supplier<ISnomedTaxonomyBuilder>() {
-			@Override public ISnomedTaxonomyBuilder get() {
-				final SnomedTaxonomyBuilder newBuilder = (SnomedTaxonomyBuilder) inferredNewTaxonomyBuilderSupplier.get();
-				final SnomedTaxonomyBuilder copy = SnomedTaxonomyBuilder.newInstance(newBuilder);
-				return copy;
-			}
-		});
-		
-		statedNewTaxonomyBuilderSupplier = Suppliers.memoize(new Supplier<ISnomedTaxonomyBuilder>() {
-			@Override public ISnomedTaxonomyBuilder get() {
-				return new SnomedTaxonomyBuilder(branchPath, StatementCollectionMode.STATED_ISA_ONLY);
-			}
-		});
-		
-		statedPreviousTaxonomyBuilderSupplier = Suppliers.memoize(new Supplier<ISnomedTaxonomyBuilder>() {
-			@Override public ISnomedTaxonomyBuilder get() {
-				final SnomedTaxonomyBuilder newBuilder = (SnomedTaxonomyBuilder) statedNewTaxonomyBuilderSupplier.get();
-				final SnomedTaxonomyBuilder copy = SnomedTaxonomyBuilder.newInstance(newBuilder);
-				return copy;
-			}
-		});
-		
-		inferredDifferenceSupplier = Suppliers.memoize(new Supplier<Pair<LongSet, LongSet>>() {
-			@Override public Pair<LongSet, LongSet> get() {
-				LOGGER.info("Calculating taxonomic differences...");
-				final Pair<LongSet, LongSet> difference = inferredNewTaxonomyBuilderSupplier.get().difference(inferredPreviousTaxonomyBuilderSupplier.get());
-				LOGGER.info("Calculating taxonomic differences successfully.");
-				return difference;
-			}
-		});
-		
-		statedDifferenceSupplier = Suppliers.memoize(new Supplier<Pair<LongSet, LongSet>>() {
-			@Override public Pair<LongSet, LongSet> get() {
-				LOGGER.info("Calculating stated taxonomic differences...");
-				final Pair<LongSet, LongSet> difference = statedNewTaxonomyBuilderSupplier.get().difference(statedPreviousTaxonomyBuilderSupplier.get());
-				LOGGER.info("Calculating stated taxonomic differences successfully.");
-				return difference;
-			}
-		});
-		
+		this.identifierService = identifierService;
 	}
 	
 	@Override
 	public void process(final ICDOCommitChangeSet commitChangeSet) throws SnowowlServiceException {
-		this.commitChangeSet = checkNotNull(commitChangeSet, "CDO commit change set argument cannot be null.");
-		for (final CDOObject newObject : commitChangeSet.getNewComponents()) {
-			if (TerminologymetadataPackage.eINSTANCE.getCodeSystem().isSuperTypeOf(newObject.eClass())) {
-				newCodeSystems.add((CodeSystem) newObject);
-			} else if (TerminologymetadataPackage.eINSTANCE.getCodeSystemVersion().isSuperTypeOf(newObject.eClass())) {
-				newCodeSystemVersions.add((CodeSystemVersion) newObject);
+		final Timer indexTimer = MetricsThreadLocal.get().timer("indexing");
+		try {
+			indexTimer.start();
+			this.commitChangeSet = checkNotNull(commitChangeSet, "CDO commit change set argument cannot be null.");
+			for (final CDOObject newObject : commitChangeSet.getNewComponents()) {
+				if (TerminologymetadataPackage.eINSTANCE.getCodeSystem().isSuperTypeOf(newObject.eClass())) {
+					newCodeSystems.add((CodeSystem) newObject);
+				} else if (TerminologymetadataPackage.eINSTANCE.getCodeSystemVersion().isSuperTypeOf(newObject.eClass())) {
+					newCodeSystemVersions.add((CodeSystemVersion) newObject);
+				}
 			}
-		}
-		
-		for (final CDOObject dirtyObject : commitChangeSet.getDirtyComponents()) {
-			if (TerminologymetadataPackage.eINSTANCE.getCodeSystemVersion().isSuperTypeOf(dirtyObject.eClass())) {
-				checkAndSetCodeSystemLastUpdateTime(dirtyObject);
+			
+			for (final CDOObject dirtyObject : commitChangeSet.getDirtyComponents()) {
+				if (TerminologymetadataPackage.eINSTANCE.getCodeSystem().isSuperTypeOf(dirtyObject.eClass())) {
+					dirtyCodeSystems.add((CodeSystem) dirtyObject);
+				} else if (TerminologymetadataPackage.eINSTANCE.getCodeSystemVersion().isSuperTypeOf(dirtyObject.eClass())) {
+					checkAndSetCodeSystemLastUpdateTime(dirtyObject);
+				}
 			}
+			
+			getIndex().read(branchPath.getPath(), new RevisionIndexRead<Void>() {
+				@Override
+				public Void execute(RevisionSearcher index) throws IOException {
+					updateDocuments(index);
+					return null;
+				}
+			});
+		} finally {
+			indexTimer.stop();
 		}
-		
-		updateDocuments();
 	}
 
 	@Override
@@ -302,9 +171,41 @@ public class SnomedCDOChangeProcessor implements ICDOChangeProcessor {
 	
 	@Override
 	public void commit() throws SnowowlServiceException {
-		LOGGER.info("Persisting changes...");
-		index.commit(branchPath);
-		LOGGER.info("Changes have been successfully persisted.");
+		final Timer indexTimer = MetricsThreadLocal.get().timer("indexing");
+		try {
+			indexTimer.start();
+			checkState(commitChangeSet.getTimestamp() > 0, "Commit timestamp should be greater than zero");
+			getIndex().write(branchPath.getPath(), commitChangeSet.getTimestamp(), new RevisionIndexWrite<Void>() {
+				@Override
+				public Void execute(RevisionWriter writer) throws IOException {
+					LOGGER.info("Persisting changes...");
+					
+					for (Entry<String, Object> doc : rawMappings.entrySet()) {
+						writer.writer().put(doc.getKey(), doc.getValue());
+					}
+					
+					// execute revision updates
+					for (Class<? extends Revision> type : ImmutableMultimap.copyOf(deletions).keySet()) {
+						writer.remove(type, Sets.newHashSet(deletions.get(type)));
+					}
+					
+					for (Entry<Long, Revision> doc : revisionMappings.entrySet()) {
+						if (!deletions.containsValue(doc.getKey())) {
+							writer.put(doc.getKey(), doc.getValue());
+						}
+					}
+					writer.commit();
+					LOGGER.info("Changes have been successfully persisted.");
+					return null;
+				}
+			});
+		} finally {
+			indexTimer.stop();
+		}
+	}
+
+	private RevisionIndex getIndex() {
+		return index;
 	}
 	
 	@Override
@@ -319,53 +220,8 @@ public class SnomedCDOChangeProcessor implements ICDOChangeProcessor {
 	
 	@Override
 	public String getChangeDescription() {
-		
-		final StringBuilder sb = new StringBuilder("SNOMED CT Changes: ");
-		if (!newConceptLogEntries.isEmpty()) {
-			if (newConceptLogEntries.size() > 100) {
-				sb.append("number of new concepts: ");
-				sb.append(newConceptLogEntries.size());
-			} else {
-				sb.append("new concepts added: ");
-				createLogEntry(sb, newConceptLogEntries);
-			}
-		}
-		
-		if (!deletedConceptLogEntries.isEmpty()) {
-			sb.append("deleted concepts: ");
-			createLogEntry(sb, deletedConceptLogEntries);
-		}
-
-		//reasoner can change lots of concepts. Do not log.
-		if (!changedConceptLogEntries.isEmpty() && changedConceptLogEntries.size() <= 100) {
-			sb.append("changed concepts: ");
-			createLogEntry(sb, changedConceptLogEntries);
-		} else if (changedConceptLogEntries.size() > 100) {
-			sb.append("number of changed concepts: ");
-			sb.append(changedConceptLogEntries.size());
-		}
-		
-		if (!newRefsetLogEntries.isEmpty()) {
-			sb.append("new reference sets: ");
-			createLogEntry(sb, newRefsetLogEntries);
-		}
-		
-		if (!deletedRefSetLogEntries.isEmpty()) {
-			sb.append("deleted reference sets: ");
-			createLogEntry(sb, deletedRefSetLogEntries);
-		}
-		
-		if (!changedRefSetLogEntries.isEmpty()) {
-			sb.append("changed reference sets: ");
-			createLogEntry(sb, changedRefSetLogEntries);
-		}
-		
-		if (!deletedConstraintLogEntries.isEmpty()) {
-			sb.append("deleted constraint: ");
-			createLogEntry(sb, deletedConstraintLogEntries);
-		}
-		
-		return sb.toString();
+		return String.format("Updated documents %d, deleted documents %d.", 
+				revisionMappings.size() + rawMappings.size(), deletions.values().size());
 	}
 
 	@Override
@@ -380,7 +236,7 @@ public class SnomedCDOChangeProcessor implements ICDOChangeProcessor {
 
 	@Override
 	public void rollback() throws SnowowlServiceException {
-		index.rollback(branchPath);
+		// XXX nothing to do, just don't commit the writer
 	}
 
 	@Override
@@ -389,237 +245,202 @@ public class SnomedCDOChangeProcessor implements ICDOChangeProcessor {
 	}
 
 	/*updates the documents in the indexes based on the dirty, detached and new components.*/
-	private void updateDocuments() {
-		
+	private void updateDocuments(RevisionSearcher searcher) throws IOException {
 		LOGGER.info("Processing and updating changes...");
-
-		prepareTaxonomyBuilders();
 		
-		new Thread(new Runnable() {
-			@Override public void run() {
-				inferredDifferenceSupplier.get();
-			}
-		}, "Inferred taxonomy difference processor").start();
-		
-		new Thread(new Runnable() {
-			@Override public void run() {
-				statedDifferenceSupplier.get();
-			}
-		}, "Stated taxonomy difference processor").start();
-		
-
-		// TODO refactor code system update into updaters
 		for (final CodeSystem newCodeSystem : newCodeSystems) {
-			index.index(branchPath, new CodeSystemIndexMappingStrategy(newCodeSystem));
+			final CodeSystemEntry entry = CodeSystemEntry.builder(newCodeSystem).build();
+			rawMappings.put(Long.toString(entry.getStorageKey()), entry);
 		}
 		
 		for (final CodeSystemVersion newCodeSystemVersion : newCodeSystemVersions) {
-			index.index(branchPath, new CodeSystemVersionIndexMappingStrategy(newCodeSystemVersion));
+			final CodeSystemVersionEntry entry = CodeSystemVersionEntry.builder(newCodeSystemVersion).build();
+			rawMappings.put(Long.toString(entry.getStorageKey()), entry);
+		}
+		
+		for (final CodeSystem dirtyCodeSystem : dirtyCodeSystems) {
+			final CodeSystemEntry entry = CodeSystemEntry.builder(dirtyCodeSystem).build();
+			rawMappings.put(Long.toString(entry.getStorageKey()), entry);
 		}
 		
 		for (final CodeSystemVersion dirtyCodeSystemVersion : dirtyCodeSystemVersions) {
-			index.index(branchPath, new CodeSystemVersionIndexMappingStrategy(dirtyCodeSystemVersion));
+			final CodeSystemVersionEntry entry = CodeSystemVersionEntry.builder(dirtyCodeSystemVersion).build();
+			rawMappings.put(Long.toString(entry.getStorageKey()), entry);
+		}
+		
+		final Set<String> statedSourceIds = Sets.newHashSet();
+		final Set<String> statedDestinationIds = Sets.newHashSet();
+		final Set<String> inferredSourceIds = Sets.newHashSet();
+		final Set<String> inferredDestinationIds = Sets.newHashSet();
+		
+		collectIds(statedSourceIds, statedDestinationIds, commitChangeSet.getNewComponents(Relationship.class), CharacteristicType.STATED_RELATIONSHIP);
+		collectIds(statedSourceIds, statedDestinationIds, commitChangeSet.getDirtyComponents(Relationship.class), CharacteristicType.STATED_RELATIONSHIP);
+		collectIds(inferredSourceIds, inferredDestinationIds, commitChangeSet.getNewComponents(Relationship.class), CharacteristicType.INFERRED_RELATIONSHIP);
+		collectIds(inferredSourceIds, inferredDestinationIds, commitChangeSet.getDirtyComponents(Relationship.class), CharacteristicType.INFERRED_RELATIONSHIP);
+		
+		final Collection<CDOID> detachedCdoIds = commitChangeSet.getDetachedComponents(SnomedPackage.Literals.RELATIONSHIP);
+		final Iterable<SnomedRelationshipIndexEntry> detachedRelationships = searcher.get(SnomedRelationshipIndexEntry.class, CDOIDUtils.createCdoIdToLong(detachedCdoIds));
+		
+		for (SnomedRelationshipIndexEntry detachedRelationship : detachedRelationships) {
+			if (detachedRelationship.getCharacteristicType().equals(CharacteristicType.STATED_RELATIONSHIP)) {
+				statedSourceIds.add(detachedRelationship.getSourceId());
+				statedDestinationIds.add(detachedRelationship.getDestinationId());
+			} else {
+				inferredSourceIds.add(detachedRelationship.getSourceId());
+				inferredDestinationIds.add(detachedRelationship.getDestinationId());
+			}
+		}
+		
+		final LongSet statedConceptIds = PrimitiveSets.newLongOpenHashSet();
+		final LongSet inferredConceptIds = PrimitiveSets.newLongOpenHashSet();
+		
+		
+		if (!statedDestinationIds.isEmpty()) {
+			final Query<SnomedConceptDocument> statedDestinationConceptsQuery = Query.select(SnomedConceptDocument.class)
+					.where(SnomedDocument.Expressions.ids(statedDestinationIds))
+					.limit(statedDestinationIds.size())
+					.build();
+			
+			for (SnomedConceptDocument statedDestinationConcept : searcher.search(statedDestinationConceptsQuery)) {
+				statedConceptIds.add(Long.parseLong(statedDestinationConcept.getId()));
+				statedConceptIds.addAll(statedDestinationConcept.getStatedParents());
+				statedConceptIds.addAll(statedDestinationConcept.getStatedAncestors());
+			}
+		}
+		
+		if (!inferredDestinationIds.isEmpty()) {
+			final Query<SnomedConceptDocument> inferredDestinationConceptsQuery = Query.select(SnomedConceptDocument.class)
+					.where(SnomedDocument.Expressions.ids(inferredDestinationIds))
+					.limit(inferredDestinationIds.size())
+					.build();
+			
+			for (SnomedConceptDocument inferredDestinationConcept : searcher.search(inferredDestinationConceptsQuery)) {
+				inferredConceptIds.add(Long.parseLong(inferredDestinationConcept.getId()));
+				inferredConceptIds.addAll(inferredDestinationConcept.getParents());
+				inferredConceptIds.addAll(inferredDestinationConcept.getAncestors());
+			}
+		}
+		
+		if (!statedSourceIds.isEmpty()) {
+			final Query<SnomedConceptDocument> statedSourceConceptsQuery = Query.select(SnomedConceptDocument.class)
+					.where(Expressions.builder()
+							.should(SnomedConceptDocument.Expressions.ids(statedSourceIds))
+							.should(SnomedConceptDocument.Expressions.statedParents(statedSourceIds))
+							.should(SnomedConceptDocument.Expressions.statedAncestors(statedSourceIds))
+							.build())
+					.limit(Integer.MAX_VALUE)
+					.build();
+			
+			for (SnomedConceptDocument statedSourceConcept : searcher.search(statedSourceConceptsQuery)) {
+				statedConceptIds.add(Long.parseLong(statedSourceConcept.getId()));
+			}
+		}
+		
+		if (!inferredSourceIds.isEmpty()) {
+			final Query<SnomedConceptDocument> inferredSourceConceptsQuery = Query.select(SnomedConceptDocument.class)
+					.where(Expressions.builder()
+							.should(SnomedConceptDocument.Expressions.ids(inferredSourceIds))
+							.should(SnomedConceptDocument.Expressions.parents(inferredSourceIds))
+							.should(SnomedConceptDocument.Expressions.ancestors(inferredSourceIds))
+							.build())
+					.limit(Integer.MAX_VALUE)
+					.build();
+			
+			for (SnomedConceptDocument inferredSourceConcept : searcher.search(inferredSourceConceptsQuery)) {
+				inferredConceptIds.add(Long.parseLong(inferredSourceConcept.getId()));
+			}
+		}
+		
+		for (Concept newConcept : commitChangeSet.getNewComponents(Concept.class)) {
+			long longId = Long.parseLong(newConcept.getId());
+			statedConceptIds.add(longId);
+			inferredConceptIds.add(longId);
+		}
+		
+		prepareTaxonomyBuilders(searcher, statedConceptIds, inferredConceptIds);
+		
+		final Collection<ChangeSetProcessor> changeSetProcessors = newArrayList();
+		changeSetProcessors.add(new ConceptChangeProcessor(SnomedIconProvider.getInstance().getAvailableIconIds(), statedTaxonomy, inferredTaxonomy));
+		changeSetProcessors.add(new DescriptionChangeProcessor());
+		changeSetProcessors.add(new RelationshipChangeProcessor());
+		changeSetProcessors.add(new RefSetMemberChangeProcessor());
+		changeSetProcessors.add(new ConstraintChangeProcessor());
+		
+		for (ChangeSetProcessor processor : changeSetProcessors) {
+			LOGGER.info("Collecting {}...", processor.description());
+			processor.process(commitChangeSet, searcher);
+			// register additions, deletions from the sub processor
+			revisionMappings.putAll(processor.getMappings());
+			deletions.putAll(processor.getDeletions());
 		}
 
-		// execute component/use case  base change processors
-		final LongCollection allIndexedConceptIds = getTerminologyBrowser().getAllConceptIds(branchPath);
-		final LongSet allConceptIds = LongSets.newLongSet(allIndexedConceptIds);
-		for (Concept newConcept : FluentIterable.from(commitChangeSet.getNewComponents()).filter(Concept.class)) {
-			allConceptIds.add(Long.parseLong(newConcept.getId()));
-		}
-		
-		for (Entry<CDOID, EClass> entry : commitChangeSet.getDetachedComponents().entrySet()) {
-			if (entry.getValue() == SnomedPackage.Literals.CONCEPT) {
-				final ExtendedComponent componentIdAndLabel = getTerminologyBrowser().getExtendedComponent(branchPath, CDOIDUtil.getLong(entry.getKey()));
-				allConceptIds.remove(Long.parseLong(componentIdAndLabel.getId()));
-			}
-		}
-		
-		final ComponentLabelChangeProcessor labelChangeProcessor = new ComponentLabelChangeProcessor(branchPath, index);
-		final Function<CDOID, Document> documentProvider = new Function<CDOID, Document>() {
-			@Override public Document apply(CDOID input) {
-				return getDocumentForDetachedMember(input);
-			}
-		};
-		final List<ChangeSetProcessor<SnomedDocumentBuilder>> changeSetProcessors = ImmutableList.<ChangeSetProcessor<SnomedDocumentBuilder>>builder()
-				.add(new ConceptChangeProcessor())
-				.add(new ConceptReferringMemberChangeProcessor(documentProvider))
-				.add(new RelationshipChangeProcessor())
-				.add(new DescriptionChangeProcessor())
-				.add(new DescriptionAcceptabilityChangeProcessor(documentProvider))
-				.add(new TaxonomyChangeProcessor(getAndCheckInferredNewTaxonomyBuilder(), getInferredPreviousTaxonomyBuilder(), inferredDifferenceSupplier,  ""))
-				.add(new TaxonomyChangeProcessor(getAndCheckStatedNewTaxonomyBuilder(), getStatedPreviousTaxonomyBuilder(), statedDifferenceSupplier, Concepts.STATED_RELATIONSHIP))
-				.add(new IconChangeProcessor(branchPath,
-						new TaxonomyProvider(getAndCheckInferredNewTaxonomyBuilder(), getInferredPreviousTaxonomyBuilder(), inferredDifferenceSupplier.get()),
-						new TaxonomyProvider(getAndCheckStatedNewTaxonomyBuilder(), getStatedPreviousTaxonomyBuilder(), statedDifferenceSupplier.get())))
-				.add(labelChangeProcessor)
-				.add(new RefSetMemberChangeProcessor())
-				.add(new RefSetMapTargetUpdateChangeProcessor(branchPath, index))
-				.add(new ConstraintChangeProcessor(branchPath, allConceptIds))
-				.build();
-		
-		for (ChangeSetProcessor<SnomedDocumentBuilder> processor : changeSetProcessors) {
-			LOGGER.info("Collecting {}...", processor.description());
-			processor.process(commitChangeSet);
-		}
 		LOGGER.info("Updating indexes...");
 
-		final List<BytesRef> deletedStorageKeys = newArrayList();
-		final Collection<String> releasableComponentIds = newHashSet();
-		
-		for (ChangeSetProcessor<SnomedDocumentBuilder> processor : changeSetProcessors) {
-			for (Long storageKey : processor.getDeletedStorageKeys()) {
-				LOGGER.trace("Deleting document {}", storageKey);
-				index.delete(branchPath, storageKey);
-				deletedStorageKeys.add(LongIndexField._toBytesRef(storageKey));
-				releasableComponentIds.addAll(getReleasableComponentIds(processor, storageKey));
-			}
-		}
-		
+		final Collection<String> releasableComponentIds = getReleasableComponentIds();
 		if (!releasableComponentIds.isEmpty()) {
-			getIdentifierService().release(releasableComponentIds);
-		}
-		
-		final LongList deletedComponentIds;
-		final Collection<String> deletedMemberIds;
-		if (!deletedStorageKeys.isEmpty()) {
-			final Filter filter = Mappings.storageKey().createBytesRefFilter(deletedStorageKeys);
-			// query component IDs
-			final Query deletedComponentIdQuery = new FilteredQuery(new PrefixQuery(new Term(SnomedMappings.id().fieldName())), filter);
-			final ComponentIdCollector collector = new ComponentIdCollector(deletedStorageKeys.size());
-			index.search(branchPath, deletedComponentIdQuery, collector);
-			deletedComponentIds = collector.getIds();
-			deletedMemberIds = index.executeReadTransaction(branchPath, new IndexRead<Collection<String>>() {
-				@Override
-				public Collection<String> execute(IndexSearcher index) throws IOException {
-					final Query deletedMemberIdQuery = new FilteredQuery(SnomedMappings.memberUuid().toExistsQuery(), filter);
-					final DocIdCollector collector = DocIdCollector.create(index.getIndexReader().maxDoc());
-					index.search(deletedMemberIdQuery, filter, collector);
-					final DocIdsIterator it = collector.getDocIDs().iterator();
-					final Collection<String> memberIds = newHashSet();
-					while (it.next()) {
-						final int docId = it.getDocID();
-						final Document doc = index.doc(docId, SnomedMappings.fieldsToLoad().memberUuid().build());
-						memberIds.add(SnomedMappings.memberUuid().getValue(doc));
-					}
-					return memberIds;
-				}
-			});
-		} else {
-			deletedComponentIds	= new LongArrayList();
-			deletedMemberIds = Collections.emptySet();
-		}
-		
-		final Multimap<String, DocumentUpdater<SnomedDocumentBuilder>> updates = LinkedHashMultimap.create();
-		for (ChangeSetProcessor<SnomedDocumentBuilder> processor : changeSetProcessors) {
-			updates.putAll(processor.getUpdates());
-		}
-		
-		final Collection<Future<?>> promises = newHashSetWithExpectedSize(updates.keySet().size());
-		final IStoreAccessor accessor = StoreThreadLocal.getAccessor();
-		for (String componentId : updates.keySet()) {
-			try {
-				if (deletedComponentIds.contains(Long.parseLong(componentId))) {
-					// skip deleted components
-					continue;
-				}
-			} catch (NumberFormatException e) {
-				// ignore, multiple ID formats are expected, so parsing a long may not work all the time
-			}
-			if (deletedMemberIds.contains(componentId)) {
-				continue;
-			}
-			
-			final Collection<DocumentUpdater<SnomedDocumentBuilder>> updaters = updates.get(componentId);
-			final DocumentCompositeUpdater<SnomedDocumentBuilder> updater = new DocumentCompositeUpdater<>(updaters);
-
-			final SnomedQueryBuilder query = SnomedMappings.newQuery();
-			try {
-				final Long componentIdLong = Long.valueOf(componentId);
-				// components are indexes with their long SNOMED CT ID
-				// predicates are indexed with their storageKey
-				query.id(componentIdLong).storageKey(componentIdLong);
-			} catch (NumberFormatException e) {
-				// members are indexes with their UUID
-				query.memberUuid(componentId);
-			}
-			final Future<?> promise = executor.submit(new Runnable() {
-				@Override
-				public void run() {
-					try {
-						StoreThreadLocal.setAccessor(accessor);
-						index.upsert(branchPath, query.matchAny(), updater, new SnomedDocumentBuilder.Factory());						
-					} catch (Exception e) {
-						LOGGER.error("Failed to upsert a document", e);
-						throw new SnowowlRuntimeException(e);
-					} finally {
-						StoreThreadLocal.setAccessor(null);
-					}
-				}
-			});
-			promises.add(promise);
-		}
-		
-
-		// wait for all index updates
-		Throwable ex = null; 
-		for (Future<?> promise : promises) {
-			try {
-				if (ex != null) {
-					promise.cancel(false);
-				} else {
-					promise.get();
-				}
-			} catch (Exception e) {
-				ex = e.getCause();
-			}
-		}
-		if (ex != null) {
-			throw SnowowlRuntimeException.wrap(ex);
+			identifierService.release(releasableComponentIds);
 		}
 		
 		LOGGER.info("Processing and updating index changes successfully finished.");
 	}
 
-	private Collection<String> getReleasableComponentIds(final ChangeSetProcessor<SnomedDocumentBuilder> processor, final Long storageKey) {
-		final Collection<String> releasableComponentIds = newHashSet();
-
-		if (releaseSupported(processor)) {
-			final String componentId = getComponentId(storageKey);
-			if (releasable(componentId)) {
-				releasableComponentIds.add(componentId);
+	private void collectIds(final Set<String> sourceIds, final Set<String> destinationIds, Iterable<Relationship> newRelationships, CharacteristicType characteristicType) {
+		for (Relationship newRelationship : newRelationships) {
+			if (newRelationship.getCharacteristicType().getId().equals(characteristicType.getConceptId())) {
+				sourceIds.add(newRelationship.getSource().getId());
+				destinationIds.add(newRelationship.getDestination().getId());
 			}
 		}
+	}
 
+	private Collection<String> getReleasableComponentIds() {
+		final Collection<String> releasableComponentIds = newHashSet();
+		for (Class<? extends Revision> type : deletions.keySet()) {
+			if (isCoreComponent(type)) {
+				releasableComponentIds.addAll(getReleasableComponentIds((Class<? extends RevisionDocument>) type, deletions.get(type)));
+			}
+		}
 		return releasableComponentIds;
 	}
 
-	private boolean releaseSupported(final ChangeSetProcessor<SnomedDocumentBuilder> processor) {
-		return processor instanceof ConceptChangeProcessor || processor instanceof DescriptionChangeProcessor || processor instanceof RelationshipChangeProcessor;
+	private boolean isCoreComponent(Class<? extends Revision> type) {
+		return SnomedConceptDocument.class == type || SnomedDescriptionIndexEntry.class == type || SnomedRelationshipIndexEntry.class == type;
 	}
 
-	private boolean releasable(final String id) {
+	private Collection<String> getReleasableComponentIds(final Class<? extends RevisionDocument> type, final Iterable<Long> storageKeys) {
+		return ImmutableSet.copyOf(ComponentUtils.<String>getIds(getReleasableComponents(type, storageKeys)));
+	}
+
+	private <T extends RevisionDocument> Iterable<T> getReleasableComponents(final Class<T> type, final Iterable<Long> storageKeys) {
 		IBranchPath currentBranchPath = getBranchPath();
+		final Set<Long> releasableStorageKeys = newHashSet(storageKeys);
 
 		while (!StringUtils.isEmpty(currentBranchPath.getParentPath())) {
 			currentBranchPath = currentBranchPath.getParent();
-
-			final int hitCount = index.getTotalHitCount(currentBranchPath, SnomedMappings.newQuery().id(id).matchAll());
-			if (hitCount > 0) {
-				return false;
+			final Iterable<T> hits = index.read(currentBranchPath.getPath(), new RevisionIndexRead<Iterable<T>>() {
+				@Override
+				public Iterable<T> execute(RevisionSearcher index) throws IOException {
+					return index.get(type, releasableStorageKeys);
+				}
+			});
+			for (T hit : hits) {
+				// the ID of this component cannot be released because it is being used on an ancestor branch
+				releasableStorageKeys.remove(hit.getStorageKey());
 			}
 		}
-
-		return true;
+		
+		// the remaining storageKeys can be removed, since they are not in use on any ancestor branch
+		return getRevisions(type, releasableStorageKeys);
 	}
 
-	private String getComponentId(final Long storageKey) {
-		return index.executeReadTransaction(branchPath, new IndexRead<String>() {
+	/**
+	 * @deprecated - would be great to use a single revision searcher
+	 */
+	private <T extends RevisionDocument> Iterable<T> getRevisions(final Class<T> type, final Iterable<Long> releasableStorageKeys) {
+		return index.read(branchPath.getPath(), new RevisionIndexRead<Iterable<T>>() {
 			@Override
-			public String execute(IndexSearcher index) throws IOException {
-				TopDocs topDocs = index.search(SnomedMappings.newQuery().storageKey(storageKey).matchAll(), 1);
-				Document doc = index.doc(topDocs.scoreDocs[0].doc, SnomedMappings.fieldsToLoad().id().build());
-				return SnomedMappings.id().getValueAsString(doc);
+			public Iterable<T> execute(RevisionSearcher index) throws IOException {
+				return index.get(type, releasableStorageKeys);
 			}
 		});
 	}
@@ -627,314 +448,42 @@ public class SnomedCDOChangeProcessor implements ICDOChangeProcessor {
 	/**
 	 * Prepares the taxonomy builder. One for representing the previous state of the ontology.
 	 * One for the new state.   
+	 * @param inferredConceptIds 
 	 */
-	private void prepareTaxonomyBuilders() {
+	private void prepareTaxonomyBuilders(final RevisionSearcher searcher, final LongSet statedConceptIds, final LongSet inferredConceptIds) {
 		LOGGER.info("Retrieving taxonomic information from store.");
-		final ISnomedTaxonomyBuilder inferredPreviousBuilder = getInferredPreviousTaxonomyBuilder(); //this will trigger the 'new one' instantiation.
-		final ISnomedTaxonomyBuilder inferredNewBuilder = getInferredNewTaxonomyBuilder(); //this could happen on the same thread. cloning is 10-20 ms.
+		final IStoreAccessor accessor = StoreThreadLocal.getAccessor();
 		
-		final ISnomedTaxonomyBuilder statedPreviousBuilder = getStatedPreviousTaxonomyBuilder();
-		final ISnomedTaxonomyBuilder statedNewBuilder = getStatedNewTaxonomyBuilder();
+		final FeatureToggles features = ApplicationContext.getServiceForClass(FeatureToggles.class);
+		final String reindexFeature = ReindexRequest.featureFor(SnomedDatastoreActivator.REPOSITORY_UUID);
+		final boolean checkCycles = features.exists(reindexFeature) ? !features.check(reindexFeature) : true;
 		
-		LOGGER.info("Building taxonomic information.");
-		final Runnable previousInferredBuilderRunnable = new SnomedTaxonomyBuilderRunnable(inferredPreviousBuilder);
-		final Runnable previousStatedBuilderRunnable = new SnomedTaxonomyBuilderRunnable(statedPreviousBuilder);
-		final Runnable newStatedUpdateRunnable = new SnomedTaxonomyUpdateRunnable(statedNewBuilder, Concepts.STATED_RELATIONSHIP);
-		final Runnable newInferredUpdateRunnable = new SnomedTaxonomyUpdateRunnable(inferredNewBuilder, Concepts.INFERRED_RELATIONSHIP);
-		
-		ForkJoinUtils.runInParallel(newInferredUpdateRunnable, previousInferredBuilderRunnable, newStatedUpdateRunnable, previousStatedBuilderRunnable);
-	}
-	
-	private class SnomedTaxonomyUpdateRunnable implements Runnable {
-		
-		private ISnomedTaxonomyBuilder taxonomyBuilder;
-		private String characteristicTypeId;
-
-		public SnomedTaxonomyUpdateRunnable(ISnomedTaxonomyBuilder taxonomyBuilder, final String characteristicTypeId) {
-			this.taxonomyBuilder = taxonomyBuilder;
-			this.characteristicTypeId = characteristicTypeId;
-		}
-		
-		@Override 
-		public void run() {
-			//if not change processing is triggered without CDO update and notification.
-			//e.g.: on task synchronization
-			if (canCopyThreadLocal) {
-				StoreThreadLocal.setAccessor(CDOServerUtils.getAccessorByUuid(getConnection().getUuid()));
+		final Runnable inferredRunnable = CDOServerUtils.withAccessor(new Runnable() {
+			@Override
+			public void run() {
+				inferredTaxonomy = Taxonomies.inferred(searcher, commitChangeSet, inferredConceptIds, checkCycles);
 			}
-			try {
-				LOGGER.info("Processing changes taxonomic information.");
-				
-				//here we have to consider changes triggered by repository state revert
-				//this point the following might happen:
-				//SNOMED CT concept and/or relationship will be contained by both deleted and new collections
-				//with same business (SCT ID) but different primary ID (CDO ID) [this is the way how we handle object resurrection]
-				//we decided, to order changes by primary keys. as primary IDs are provided in sequence, one could assume
-				//that the larger primary ID happens later, and that is the truth
-				
-				//but as deletion always happens later than addition, we only have to take care of deletion
-				//so if the deletion is about to erase something that has the same SCT ID but more recent (larger) 
-				//primary key, we just ignore it when building the taxonomy.
-				
-				final Iterable<Concept> newConcepts = FluentIterable.from(commitChangeSet.getNewComponents()).filter(Concept.class);
-				final Iterable<Concept> dirtyConcepts = FluentIterable.from(commitChangeSet.getDirtyComponents()).filter(Concept.class);
-				final Iterable<CDOID> deletedConcepts = ChangeSetProcessorBase.getDetachedComponents(commitChangeSet, SnomedPackage.Literals.CONCEPT);
-				final Iterable<Relationship> newRelationships = FluentIterable.from(commitChangeSet.getNewComponents()).filter(Relationship.class);
-				final Iterable<Relationship> dirtyRelationships = FluentIterable.from(commitChangeSet.getDirtyComponents()).filter(Relationship.class);
-				final Iterable<CDOID> deletedRelationships = ChangeSetProcessorBase.getDetachedComponents(commitChangeSet, SnomedPackage.Literals.RELATIONSHIP);
-				
-				//SCT ID - relationships
-				final Map<String, Relationship> _newRelationships = Maps.newHashMap(Maps.uniqueIndex(newRelationships, GET_SCT_ID_FUNCTION));
-				
-				//SCT ID - concepts
-				final Map<String, Concept> _newConcepts = Maps.newHashMap(Maps.uniqueIndex(newConcepts, GET_SCT_ID_FUNCTION));
-				
-				for (final Relationship newRelationship : newRelationships) {
-					taxonomyBuilder.addEdge(createEdge(newRelationship));
-				}
-				
-				for (final Relationship dirtyRelationship : dirtyRelationships) {
-					taxonomyBuilder.addEdge(createEdge(dirtyRelationship));
-				}
-				
-				for (final CDOID relationshipCdoId : deletedRelationships) {
-					final long cdoId = CDOIDUtils.asLong(relationshipCdoId);
-					final SnomedRelationshipIndexQueryAdapter queryAdapter = SnomedRelationshipIndexQueryAdapter.findByStorageKey(cdoId);
-					final Iterable<SnomedRelationshipIndexEntry> results = getIndexService().search(branchPath, queryAdapter, 2);
-					
-					Preconditions.checkState(!CompareUtils.isEmpty(results), "No relationships were found with unique storage key: " + cdoId);
-					Preconditions.checkState(Iterables.size(results) < 2, "More than one relationships were found with unique storage key: " + cdoId);
-					
-					final SnomedRelationshipIndexEntry relationship = Iterables.getOnlyElement(results);
-					final String relationshipId = relationship.getId();
-					//same relationship as new and detached
-					if (_newRelationships.containsKey(relationshipId)) {
-						final Relationship newRelationship = _newRelationships.get(relationshipId);
-						final String typeId = newRelationship.getType().getId();
-						//ignore everything but IS_As
-						if (Concepts.IS_A.equals(typeId)) {
-							//check source and destination as well
-							if (relationship.getObjectId().equals(newRelationship.getSource().getId())
-									&& relationship.getValueId().equals(newRelationship.getDestination().getId())) {
-								
-								//and if the new relationship has more recent (larger CDO ID), ignore deletion
-								if (CDOIDUtils.asLong(newRelationship.cdoID()) > cdoId) {
-									continue;
-								}
-							}
-						}
-					}
-					taxonomyBuilder.removeEdge(createEdge(relationship));
-				}
-				for (final Concept newConcept : newConcepts) {
-					taxonomyBuilder.addNode(createNode(newConcept));
-				}
-				for (final CDOID conceptCdoId : deletedConcepts) {
-					
-					//consider the same as for relationship
-					//we have to decide if deletion is the 'stronger' modification or not
-					final long cdoId = CDOIDUtils.asLong(conceptCdoId);
-					final ExtendedComponent concept = getTerminologyBrowser().getExtendedComponent(branchPath, cdoId);
-					checkState(concept != null, "No concepts were found with unique storage key: " + cdoId);
-					final String conceptId = concept.getId();
-					
-					//same concept as addition and deletion
-					if (_newConcepts.containsKey(conceptId)) {
-						final Concept newConcept = _newConcepts.get(conceptId);
-						//check whether new concept has more recent (larger CDO ID) or not, ignore deletion
-						if (CDOIDUtils.asLong(newConcept.cdoID()) > cdoId) {
-							continue;
-						}
-					}
-					
-					//else delete it
-					taxonomyBuilder.removeNode(createDeletedNode(concept));
-				}
-				for (final Concept dirtyConcept : dirtyConcepts) {
-					if (!dirtyConcept.isActive()) { //we do not need this concept. either it was deactivated now or sometime earlier.
-						//nothing can be dirty and new at the same time
-						taxonomyBuilder.removeNode(createNode(getTerminologyBrowser().getConcept(branchPath, dirtyConcept.getId())));
-					} else { //consider reverting inactivation
-						if (!taxonomyBuilder.containsNode(dirtyConcept.getId())) {
-							taxonomyBuilder.addNode(createNode(dirtyConcept));
-						}
-					}
-				}
-				LOGGER.info("Rebuilding taxonomic information based on the changes.");
-				taxonomyBuilder.build();
-			} finally {
-				if (canCopyThreadLocal) {
-					StoreThreadLocal.release();
-				}
+		}, accessor);
+		
+		final Runnable statedRunnable = CDOServerUtils.withAccessor(new Runnable() {
+			@Override
+			public void run() {
+				statedTaxonomy = Taxonomies.stated(searcher, commitChangeSet, statedConceptIds, checkCycles);
 			}
-			
-		}
+		}, accessor);
 		
-		/*creates a taxonomy edge instance based on the given SNOMED CT relationship*/
-		private TaxonomyBuilderEdge createEdge(final Relationship relationship) {
-			return new TaxonomyBuilderEdge() {
-				@Override public boolean isCurrent() {
-					return relationship.isActive();
-				}
-				@Override public String getId() {
-					return relationship.getId();
-				}
-				@Override public boolean isValid() {
-					return Concepts.IS_A.equals(relationship.getType().getId()) && characteristicTypeId.equals(relationship.getCharacteristicType().getId());
-				}
-				@Override public String getSoureId() {
-					return relationship.getSource().getId();
-				}
-				@Override public String getDestinationId() {
-					return relationship.getDestination().getId();
-				}
-			};
-		}
-		
-		/*creates a taxonomy edge instance based on the given SNOMED CT relationship*/
-		private TaxonomyBuilderEdge createEdge(final SnomedRelationshipIndexEntry relationship) {
-			return new TaxonomyBuilderEdge() {
-				@Override public boolean isCurrent() {
-					return relationship.isActive();
-				}
-				@Override public String getId() {
-					return relationship.getId();
-				}
-				@Override public boolean isValid() {
-					return Concepts.IS_A.equals(relationship.getAttributeId()) && characteristicTypeId.equals(relationship.getCharacteristicTypeId());
-				}
-				@Override public String getSoureId() {
-					return relationship.getObjectId();
-				}
-				@Override public String getDestinationId() {
-					return relationship.getValueId();
-				}
-			};
-		}
-		
-		/*creates and returns with a new taxonomy node instance based on the given SNOMED CT concept*/
-		private TaxonomyBuilderNode createNode(final Concept concept) {
-			return new TaxonomyBuilderNode() {
-				@Override public boolean isCurrent() {
-					return concept.isActive();
-				}
-				@Override public String getId() {
-					return concept.getId();
-				}
-			};
-		}
-
-		/*creates and returns with a new taxonomy node instance based on the given SNOMED CT concept*/
-		private TaxonomyBuilderNode createNode(final SnomedConceptIndexEntry concept) {
-			return new TaxonomyBuilderNode() {
-				@Override public boolean isCurrent() {
-					return concept.isActive();
-				}
-				@Override public String getId() {
-					return concept.getId();
-				}
-			};
-		}
-		
-		private TaxonomyBuilderNode createDeletedNode(final ExtendedComponent concept) {
-			return new TaxonomyBuilderNode() {
-				@Override public boolean isCurrent() {
-					throw new UnsupportedOperationException("This method should not be called when removing taxonomy nodes.");
-				}
-				@Override public String getId() {
-					return concept.getId();
-				}
-			};
-		}
-	}
-
-	/*returns with the taxonomy builder instance representing the latest state of the current ontology*/
-	private ISnomedTaxonomyBuilder getInferredNewTaxonomyBuilder() {
-		return inferredNewTaxonomyBuilderSupplier.get();
-	}
-	
-	private ISnomedTaxonomyBuilder getStatedNewTaxonomyBuilder() {
-		return statedNewTaxonomyBuilderSupplier.get();
-	}
-
-	/*returns with the new taxonomy builder instance. also checks it's state.*/
-	private ISnomedTaxonomyBuilder getAndCheckInferredNewTaxonomyBuilder() {
-		final ISnomedTaxonomyBuilder taxonomyBuilder = getInferredNewTaxonomyBuilder();
-		Preconditions.checkState(!taxonomyBuilder.isDirty(), "Builder for representing the new state of the taxonomy has dirty state.");
-		return taxonomyBuilder;
-	}
-	
-	private ISnomedTaxonomyBuilder getAndCheckStatedNewTaxonomyBuilder() {
-		final ISnomedTaxonomyBuilder taxonomyBuilder = getStatedNewTaxonomyBuilder();
-		Preconditions.checkState(!taxonomyBuilder.isDirty(), "Builder for representing the new state of the taxonomy has dirty state.");
-		return taxonomyBuilder;
-	}
-	
-	/*returns with the taxonomy builder representing the state of the ontology before the commit that is currently being processed*/
-	private ISnomedTaxonomyBuilder getInferredPreviousTaxonomyBuilder() {
-		return inferredPreviousTaxonomyBuilderSupplier.get();
-	}
-	
-	private ISnomedTaxonomyBuilder getStatedPreviousTaxonomyBuilder() {
-		return statedPreviousTaxonomyBuilderSupplier.get();
+		ForkJoinUtils.runInParallel(inferredRunnable, statedRunnable);
 	}
 	
 	@SuppressWarnings("restriction")
 	private void checkAndSetCodeSystemLastUpdateTime(final CDOObject component) {
-		final CodeSystemVersion codeSystemVersion = (CodeSystemVersion) component;
+		final CodeSystemVersion version = (CodeSystemVersion) component;
 		final CDOFeatureDelta lastUpdateFeatureDelta = commitChangeSet.getRevisionDeltas().get(component.cdoID()).getFeatureDelta(TerminologymetadataPackage.eINSTANCE.getCodeSystemVersion_LastUpdateDate());
 		if (lastUpdateFeatureDelta instanceof org.eclipse.emf.cdo.internal.common.revision.delta.CDOSetFeatureDeltaImpl) {
 			((org.eclipse.emf.cdo.internal.common.revision.delta.CDOSetFeatureDeltaImpl) lastUpdateFeatureDelta).setValue(new Date(commitChangeSet.getTimestamp()));
 			((InternalCDORevision) component.cdoRevision()).set(TerminologymetadataPackage.eINSTANCE.getCodeSystemVersion_LastUpdateDate(), CDOStore.NO_INDEX, new Date(commitChangeSet.getTimestamp()));
-			dirtyCodeSystemVersions.add(codeSystemVersion);
+			dirtyCodeSystemVersions.add(version);
 		}		
-	}
-
-	/*returns with the index document of a detached reference set member identified by its unique storage key.*/
-	private Document getDocumentForDetachedMember(final CDOID id) {
-		
-		final long storageKey = CDOIDUtils.asLong(id);
-		final Query query = SnomedMappings.newQuery().storageKey(storageKey).matchAll();
-		
-		final TopDocs topDocs = index.search(branchPath, query, 1);
-		
-		Preconditions.checkNotNull(topDocs, "Cannot find detached reference set member with its unique storage key: " + id);
-		Preconditions.checkState(!CompareUtils.isEmpty(topDocs.scoreDocs), "Cannot find detached reference set member with its unique storage key: " + id);
-		
-		final ScoreDoc scoreDoc = topDocs.scoreDocs[0];
-		final Document doc = index.document(branchPath, scoreDoc.doc, MEMBER_FIELD_TO_LOAD);
-		
-		return Preconditions.checkNotNull(doc, "Cannot find detached reference set member with its unique storage key: " + id);
-		
-	}
-	
-	/*returns with the terminology browser service. always represents the previous state of the SNOMED CT ontology*/
-	private SnomedTerminologyBrowser getTerminologyBrowser() {
-		return ApplicationContext.getInstance().getService(SnomedTerminologyBrowser.class);
-	}
-	
-	/*returns with index service for SNOMED CT ontology*/
-	private SnomedIndexService getIndexService() {
-		return ApplicationContext.getInstance().getService(SnomedIndexService.class);
-	}
-	
-	private ISnomedIdentifierService getIdentifierService() {
-		return ApplicationContext.getInstance().getService(ISnomedIdentifierService.class);
-	}
-
-	private void createLogEntry(final StringBuilder sb, final Set<ComponentIdAndLabel> logEntries) {
-		for (final ComponentIdAndLabel logEntry : logEntries) {
-			sb.append("[");
-			sb.append(logEntry.getId());
-			sb.append(":");
-			sb.append(logEntry.getLabel());
-			sb.append("], ");
-		}
-	}
-
-	/**returns with the CDO connection for SNOMED CT*/
-	private ICDOConnection getConnection() {
-		return ApplicationContext.getInstance().getService(ICDOConnectionManager.class).get(SnomedPackage.eINSTANCE);
 	}
 
 }

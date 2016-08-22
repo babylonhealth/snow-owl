@@ -15,20 +15,159 @@
  */
 package com.b2international.snowowl.datastore;
 
-import java.io.Serializable;
+import static com.b2international.index.query.Expressions.exactMatch;
 
+import com.b2international.index.Doc;
+import com.b2international.index.query.Expression;
+import com.b2international.snowowl.core.branch.Branch;
+import com.b2international.snowowl.datastore.cdo.CDOIDUtils;
+import com.b2international.snowowl.datastore.cdo.CDOUtils;
 import com.b2international.snowowl.terminologymetadata.CodeSystem;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Strings;
 
 
 /**
  * CDO independent representation of a {@link CodeSystem}.
- *
  */
-public class CodeSystemEntry implements Serializable, ICodeSystem {
+@Doc
+@JsonDeserialize(builder = CodeSystemEntry.Builder.class)
+public class CodeSystemEntry implements ICodeSystem {
 
-	private static final long serialVersionUID = 3089017116155820382L;
+	public static class Expressions {
 
+		public static Expression shortName(String shortName) {
+			return exactMatch(Fields.SHORT_NAME, shortName);
+		}
+		
+		public static Expression oid(String oid) {
+			return exactMatch(Fields.OID, oid);
+		}
+		
+		
+	}
+	
+	public static class Fields {
+		public static final String STORAGE_KEY = "storageKey";
+		public static final String OID = "oid";
+		public static final String NAME = "name"; 
+		public static final String SHORT_NAME = "shortName"; 
+		public static final String ORG_LINK = "orgLink"; 
+		public static final String LANGUAGE = "language"; 
+		public static final String CITATION = "citation"; 
+		public static final String ICON_PATH = "iconPath"; 
+		public static final String TERMINOLOGY_COMPONENT_ID = "terminologyComponentId";
+		public static final String REPOSITORY_UUID = "repositoryUuid";
+	}
+
+	public static Builder builder() {
+		return new Builder();
+	}
+	
+	public static Builder builder(CodeSystem codeSystem) {
+		return builder()
+				.oid(codeSystem.getCodeSystemOID())
+				.name(codeSystem.getName())
+				.shortName(codeSystem.getShortName())
+				.orgLink(codeSystem.getMaintainingOrganizationLink())
+				.language(codeSystem.getLanguage())
+				.citation(codeSystem.getCitation())
+				.iconPath(codeSystem.getIconPath())
+				.terminologyComponentId(codeSystem.getTerminologyComponentId())
+				.storageKey(CDOUtils.isTransient(codeSystem) ? CDOUtils.NO_STORAGE_KEY : CDOIDUtils.asLong(codeSystem.cdoID()))
+				.repositoryUuid(codeSystem.getRepositoryUuid())
+				.branchPath(codeSystem.getBranchPath())
+				.extensionOf(codeSystem.getExtensionOf() == null ? null : codeSystem.getExtensionOf().getShortName());
+	}
+	
+	@JsonPOJOBuilder(withPrefix="")
+	public static class Builder {
+		
+		private long storageKey;
+		private String oid;
+		private String name; 
+		private String shortName; 
+		private String orgLink; 
+		private String language; 
+		private String citation; 
+		private String iconPath; 
+		private String terminologyComponentId;
+		private String repositoryUuid;
+		private String branchPath = Branch.MAIN_PATH;
+		private String extensionOf;
+		
+		Builder() {
+		}
+		
+		public Builder storageKey(long storageKey) {
+			this.storageKey = storageKey;
+			return this;
+		}
+		
+		public Builder oid(String oid) {
+			this.oid = oid;
+			return this;
+		}
+		
+		public Builder name(String name) {
+			this.name = name;
+			return this;
+		}
+		
+		public Builder shortName(String shortName) {
+			this.shortName = shortName;
+			return this;
+		}
+		
+		public Builder orgLink(String orgLink) {
+			this.orgLink = orgLink;
+			return this;
+		}
+		
+		public Builder language(String language) {
+			this.language = language;
+			return this;
+		}
+		
+		public Builder citation(String citation) {
+			this.citation = citation;
+			return this;
+		}
+		
+		public Builder iconPath(String iconPath) {
+			this.iconPath = iconPath;
+			return this;
+		}
+		
+		public Builder terminologyComponentId(String snowOwlId) {
+			this.terminologyComponentId = snowOwlId;
+			return this;
+		}
+		
+		public Builder repositoryUuid(String repositoryUuid) {
+			this.repositoryUuid = repositoryUuid;
+			return this;
+		}
+		
+		public Builder branchPath(final String branchPath) {
+			this.branchPath = branchPath;
+			return this;
+		}
+		
+		public Builder extensionOf(final String extensionOf) {
+			this.extensionOf = extensionOf;
+			return this;
+		}
+		
+		public CodeSystemEntry build() {
+			return new CodeSystemEntry(oid, name, shortName, orgLink, language, citation, iconPath, terminologyComponentId, storageKey, repositoryUuid, branchPath, extensionOf);
+		}
+		
+		
+	}
+
+	private final long storageKey;
 	private final String oid;
 	private final String name; 
 	private final String shortName; 
@@ -36,24 +175,26 @@ public class CodeSystemEntry implements Serializable, ICodeSystem {
 	private final String language; 
 	private final String citation; 
 	private final String iconPath; 
-	private final String snowOwlId;
-	private final long cdoId;
+	private final String terminologyComponentId;
 	private final String repositoryUuid;
-
+	private final String branchPath;
+	private final String extensionOf;
 	
-	public CodeSystemEntry(final String oid, final String name, final String shortName, final String orgLink, 
-			final String language, final String citation, final String iconPath, final String snowOwlId, final String cdoId, final String repositoryUuid) {
-		
-		this.cdoId = Long.parseLong(cdoId);
-		this.repositoryUuid = repositoryUuid;
+	private CodeSystemEntry(final String oid, final String name, final String shortName, final String orgLink, 
+			final String language, final String citation, final String iconPath, final String terminologyComponentId, final long storageKey, final String repositoryUuid,
+			final String branchPath, final String extensionOf) {
+		this.storageKey = storageKey;
 		this.oid = Strings.nullToEmpty(oid);
-		this.name = name;
-		this.shortName = shortName;
-		this.orgLink = orgLink;
-		this.language = language;
-		this.citation = citation;
-		this.iconPath = iconPath;
-		this.snowOwlId = snowOwlId;
+		this.name = Strings.nullToEmpty(name);
+		this.shortName = Strings.nullToEmpty(shortName);
+		this.orgLink = Strings.nullToEmpty(orgLink);
+		this.language = Strings.nullToEmpty(language);
+		this.citation = Strings.nullToEmpty(citation);
+		this.iconPath = Strings.nullToEmpty(iconPath);
+		this.terminologyComponentId = terminologyComponentId;
+		this.repositoryUuid = repositoryUuid;
+		this.branchPath = branchPath;
+		this.extensionOf = extensionOf;
 	}
 
 	@Override
@@ -92,8 +233,8 @@ public class CodeSystemEntry implements Serializable, ICodeSystem {
 	}
 
 	@Override
-	public String getSnowOwlId() {
-		return snowOwlId;
+	public String getTerminologyComponentId() {
+		return terminologyComponentId;
 	}
 	
 	@Override
@@ -102,7 +243,17 @@ public class CodeSystemEntry implements Serializable, ICodeSystem {
 	}
 	
 	public long getStorageKey() {
-		return  cdoId;
+		return  storageKey;
+	}
+	
+	@Override
+	public String getBranchPath() {
+		return branchPath;
+	}
+	
+	@Override
+	public String getExtensionOf() {
+		return extensionOf;
 	}
 
 	@Override

@@ -1,6 +1,154 @@
 # Change Log
 All notable changes to this project will be documented in this file.
 
+## 5.0.0
+
+### Breaking changes
+
+This section discusses the changes that you need to be aware of when migrating your application to Snow Owl 5.0.0.
+
+#### Datasets created before 5.0.0
+Snow Owl v5.0.0 no longer supports nested index directory format. The new format is flat, branches do not have their own directories under the corresponding terminology repository's root index folder. Branching and revision information are coded into each document and each terminology component has multiple documents in the index, which is called `revision index` and the documents are `revisions`. Additionally with the new index format, Snow Owl moved from Lucene v4.9.0 to v5.5.0. Indexes, that still use the old index API, but depend on the new Lucene version, should be accessible and readable by Lucene v5.5.0.
+
+To support migration of incompatible datasets, Snow Owl v5.0.0 comes with a `reindex` command, which can be used to create the new index for any dataset based on the contents of the relational database. See updated [Admin Console Reference Guide](/documentation/src/main/asciidoc/administrative_console_reference.adoc#diagnostics-and-maintenance) for details.
+
+#### Java API changes
+Due to index format changes, public APIs (generic and/or SNOMED CT terminology related) - that used the old format - become obsolete, and either marked with deprecated annotation or have been completely removed. See the affected public APIs in the Removed section. 
+
+#### Review API changes
+In general the `Review API` still works the same way as in the `4.x` versions, but the new, changed, deleted concept ID sets might contain non-Concept identifiers when a member of a `Relationship/Description` changes, but the corresponding `Relationship/Description` does not. It is recommended to fetch the container `SNOMED CT Concept` identifier by querying the *source* branch for the new or changed Relationship/Descriptions, and extracting the SNOMED CT Concept identifier from either the conceptId or sourceId properties. Querying deleted revisions from the tip of a branch is currently not supported, see next section. 
+
+With this change and limited capabilities, Snow Owl will no longer support the current version of the `Review API` starting from the next release (`5.1.0`), and it will replace it with a more generic `Branch Compare API`. This new API will return the new/changed/deleted document identifiers directly without trying to be smart and replace the document identifier with the corresponding container (root resource, like the `SNOMED CT Concept`) component identifier. API consumers will be responsible for fetching and computing the final compare result based on the actual changes between the branches, if they would like to still show the review in the scope of a `SNOMED CT Concept`. This enables `Snow Owl` to use the same `Branch Compare API` for different terminology implementations and the API will provide access points to query the proper revision of new/changed/deleted components (currently it only supports the latest revision, which returns `HTTP 404 Not Found` for deleted components).
+
+### Added
+- Maintenance commands:
+ * `snowowl reindex <repositoryId> <failedCommitTimestamp>` - Reindexes the currently available database content from scratch, or from the specified commitTimestamp (if a previously initiated reindex process has failed at some point)
+ * `snowowl optimize <repositoryId> <maxSegments>` - Optimizes the underlying index for the repository to have the supplied maximum number of segments (default number is 1)
+ * `snowowl purge <repositoryId> <branchPath> <purgeStrategy>` - optimizes the underlying index by deleting unnecessary documents from the given branch using the given purge strategy (default strategy is `LATEST`, available strategies are `ALL`, `LATEST`, `HISTORY`)
+- New search options for SNOMED CT Reference Set Members:
+ * `acceptabilityId`
+ * `characteristicTypeId`
+ * `correlationId`
+ * `descriptionFormat`
+ * `mapCategoryId`
+ * `operatorId`
+ * `targetComponent`
+ * `unitId`
+ * `valueId`
+- New `revisionCache` configuration option in `repository` section. Enables/Disables CDO revision cache based on its value (default value is `true`).
+- New `index` configuration options under `repository` section:
+ * `commitInterval` - the interval in milliseconds, which specifies how often flush and sync index changes to disk (default is `15000`, 15 seconds, minimum allowed value is `1000`, 1 second)
+ * `translogSyncInterval` - the interval in milliseconds, which specifies how often the transaction log flushes its changes to disk (default is `5000`, 5 seconds, minimum allowed value is `1000`, 1 second)
+ * `queryWarnThreshold` - threshold in milliseconds, which specifies when to log a WARN level message in the log file about a slow query (default value is `400`)
+ * `queryInfoThreshold` - threshold in milliseconds, which specifies when to log an INFO level message in the log file about a slow query (default value is `300`)
+ * `queryDebugThreshold` - threshold in milliseconds, which specifies when to log a DEBUG level message in the log file about a slow query (default value is `100`)
+ * `queryTraceThreshold` - threshold in milliseconds, which specifies when to log a TRACE level message in the log file about a slow query (default value is `50`)
+ * `fetchWarnThreshold` - threshold in milliseconds, which specifies when to log a WARN level message in the log file about a slow fetch (default value is `200`)
+ * `fetchInfoThreshold` - threshold in milliseconds, which specifies when to log an INFO level message in the log file about a slow fetch (default value is `100`)
+ * `fetchDebugThreshold` - threshold in milliseconds, which specifies when to log a DEBUG level message in the log file about a slow fetch (default value is `50`)
+ * `fetchTraceThreshold` - threshold in milliseconds, which specifies when to log a TRACE level message in the log file about a slow fetch (default value is `10`)
+- New modules:
+ * `com.b2international.index.api` - Generic Index API module
+ * `com.b2international.index.lucene` - Lucene based implementation of Generic Index API module
+ * `com.b2international.index.api.tests` - Generic test cases to verify implementation modules of the Index API module
+ * `com.b2international.index.api.tests.tools` - Useful utility classes when writing Index API based test cases
+ * `com.b2international.collections.jackson` - Jackson ser/deser module for `com.b2international.collections.api` module
+
+### Changed
+- Improved change processing performance by loading only the relevant revisions from the index
+- Log entry format of requests has changed to the following
+ * The logged entry is now a valid JSON object  
+ * Format: `{"repositoryId":"string", "type":"string", "metrics": {...}, ...request specific properties}`
+- Metrics
+ * All values are measured in milliseconds
+ * Read operations measure their execution time (`responseTime`)
+ * Commit operations measure their execution time (`responseTime`) and commit subtask execution times (`preCommit`, `preRequest`, `traceability`, `indexing`, `commit`)
+
+### Removed
+- Deprecated public SNOMED CT APIs that have been replaced by the new Request based APIs
+ * `SnomedTerminologyBrowser`
+ * `SnomedStatementBrowser`
+ * `SnomedPredicateBrowser`
+ * `SnomedComponentService`
+ * `SnomedTaxonomyService`
+- Configuration options:
+ * `indexTimeout` configuration has been removed, because the new index API uses a single index and it does not require disposal of branch specific Index Readers/Writers
+
+## 4.7.0
+
+### Added
+- New feature, SNOMED CT Extension support, see `snomed_extension_management.adoc` for details.
+ * `POST` `/codesystems` - creates a new codesystem
+ * `PUT` `/codesystems` - updates an existing codesystem
+- Representations
+ * New `branchPath` property on CodeSystems (currently active path of a CodeSystem)
+ * New `repositoryUuid` property on CodeSystems (the current repository of the CodeSystem )
+ * New `extensionOf` property on CodeSystems (the base code system of the CodeSystem)
+ * New `parentBranchPath` property on CodeSystemVersions (the parent branch path where the version branch is forked off)
+- `effectiveTime` based filtering for all components (currently members only, other components will be support on release of 4.7)
+- New module for support full javadoc of Snow Owl public APIs (`com.b2international.snowowl.javadoc`). The new module is part of the `site` Maven profile.
+
+### Changed
+- SNOMED CT Extension support
+ * `GET` `/codesystems` - returns all currently known codesystems (in SNOMED CT, all releases, including extensions)
+ * `GET` `/codesystems/:id` - returns a codesystem by its unique identifier, which can be its short name or its oid (both should be unique)
+ * `POST` `/codesystems/:id/versions` - create a new version in a codesystem (or release in SNOMED CT)
+- SNOMED CT RF2 import
+ * `POST` `/imports` - new optional property `codeSystemShortName`, identifies the target code system of the import, the default value is the short name of the SNOMED CT International Release
+ * 
+- Revise handling of structural reference set members (language, inactivation and association members)
+ * Try to reuse members where possible (reactivate if necessary)
+ * Keep only one active language reference set member per description and do not create new ones when acceptability changes
+
+### Dependencies
+- Replaced custom `3.2.2` version of `org.semanticweb.owl.owlapi` module with a dependency to the `3.4.4` version of it.
+ * Makes it possible to use `ELK v0.4.2` runtime and during tests
+- Upgrade custom `Protegé` libraries from `4.1` to `4.3`
+- Replaced the unsupported [pcj](http://pcj.sourceforge.net/) library with [FastUtil](https://github.com/vigna/fastutil) and also added a nice primitive collection API on top of it to support replacement of the primitive collection library underneath (and/or support multiple libraries with different capabilities, performance at the same time)
+- Migration from old terminology registry model to updated model, migration scripts are in `/documentation/src/main/asciidoc/scripts/migration_4.6_to_4.7/`
+
+### New modules
+- `com.b2international.collections.api` - primitive collections API
+- `com.b2international.collections.fastutil` - [FastUtil](https://github.com/vigna/fastutil) implementation of primitive collections API
+ 
+### Bugs
+- Reduces thread usage of SNOMED CT change processing
+- Index initialization during SNOMED CT RF2 import now filters content based on the current latest system effective time, resulting in much more reliable imports and content when the import completes
+
+### Known issues
+- No RF2 import config validation when the branchPath is unrelated with the given `codeSystemShortName` property
+
+## 4.6.0
+
+### Added
+- All references set member properties are supported (using RF2 property names)
+- Support for rebase queueing
+ * `GET` `/merges` - returns all merges happened since the start of the server ()
+ * `GET` `/merges/:id` - return a merge by its identifier
+ * `POST` `/merges` - creates and starts a new merge between two branch points
+ * `DELETE` `/merges/:id` - deletes a merge object by its identifier
+- Expansion support improvements
+ * Expand `targetComponent` on association reference set members
+ * Expand `members` of any SNOMED CT core component (Concept, Description, Relationship) (eq. `expand=members()`)
+ * Support `stated` and `inferred` expansion of `descendants` and `ancestors` (both Java and REST API)
+- Representations (Java and REST API)
+ * New `iconId` property on SNOMED CT model components (not available in JSON representations)
+ * New, expandable `typeConcept` object property on SNOMED CT Relationships (by default only `id` is available on the object)
+ * New, expandable `sourceConcept` object property on SNOMED CT Relationships (by default only `id` is available on the object)
+ * New, expandable `destinationConcept` object property on SNOMED CT Relationships (by default only `id` is available on the object)
+ * New, expandable `type` object property on SNOMED CT Relationships (by default only `id` is available on the object)
+
+### Changed
+- REST API property changes
+ * `targetComponentId` changed to `targetComponent` (became nested object, expandable)
+- Search improvements (Java API only, no REST support yet)
+ * Support for fuzzy matching
+ * Support for parsed terms
+ * Support for DOI based scoring (using a default DOI file, not configurable yet)
+ * Support for search profiles
+- The type of the `group` property changed from `byte` to `int` to support greater than `127` values
+- Using time based rolling policy with 90 days worth of history instead of fixed window with size restriction
+
 ## 4.5.0
 
 ### Added

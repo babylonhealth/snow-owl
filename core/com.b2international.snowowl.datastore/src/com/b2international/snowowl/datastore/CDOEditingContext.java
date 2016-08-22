@@ -21,7 +21,7 @@ import static com.b2international.commons.exceptions.Exceptions.extractCause;
 import static com.b2international.snowowl.core.ApplicationContext.getServiceForClass;
 import static com.b2international.snowowl.datastore.BranchPathUtils.createPath;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.google.common.collect.Maps.newHashMap;
 import static java.text.MessageFormat.format;
 
 import java.io.File;
@@ -31,6 +31,7 @@ import java.util.ConcurrentModificationException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -50,6 +51,8 @@ import org.eclipse.emf.ecore.EObject;
 import org.eclipse.emf.ecore.EPackage;
 import org.eclipse.emf.ecore.util.EcoreUtil;
 import org.eclipse.net4j.util.lifecycle.LifecycleUtil;
+import org.eclipse.xtext.util.Pair;
+import org.eclipse.xtext.util.Tuples;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,17 +63,21 @@ import com.b2international.snowowl.core.ApplicationContext;
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.core.api.ILookupService;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
+import com.b2international.snowowl.core.domain.exceptions.CodeSystemNotFoundException;
 import com.b2international.snowowl.core.exceptions.ComponentNotFoundException;
+import com.b2international.snowowl.core.exceptions.ConflictException;
 import com.b2international.snowowl.datastore.cdo.CDOQueryUtils;
 import com.b2international.snowowl.datastore.cdo.CDOUtils;
 import com.b2international.snowowl.datastore.cdo.ICDOConnection;
 import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
 import com.b2international.snowowl.datastore.exception.RepositoryLockException;
-import com.b2international.snowowl.datastore.tasks.TaskManager;
 import com.b2international.snowowl.datastore.utils.ComponentUtils2;
-import com.b2international.snowowl.terminologymetadata.CodeSystemVersionGroup;
+import com.b2international.snowowl.terminologymetadata.CodeSystem;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
+import com.google.common.collect.FluentIterable;
 
 /**
  * This class is a thin, generic wrapper around the underlying {@link CDOTransaction}. 
@@ -94,14 +101,9 @@ public abstract class CDOEditingContext implements AutoCloseable {
 	 * Underlying CDO transaction.
 	 */
 	protected final CDOTransaction transaction;
-
-	/**
-	 * @param ePackage - the primary ePackage of this editing context
-	 */
-	protected CDOEditingContext(EPackage ePackage) {
-		this(ePackage, getActivePath(ePackage));
-	}
 	
+	private final Map<Pair<String, Class<?>>, EObject> resolvedObjectsById = newHashMap();
+
 	protected CDOEditingContext(final EPackage ePackage, final IBranchPath branchPath) {
 		this(createTransaction(checkNotNull(ePackage, "ePackage"), checkNotNull(branchPath, "Branch path argument cannot be null.")));
 	}
@@ -190,11 +192,19 @@ public abstract class CDOEditingContext implements AutoCloseable {
 	public <T extends EObject> T lookup(final String componentId, Class<T> type) {
 		if (Strings.isNullOrEmpty(componentId)) {
 			throw new ComponentNotFoundException(type.getSimpleName(), componentId);
+		} else if (CodeSystem.class.isAssignableFrom(type)) {
+			return type.cast(getCodeSystem(componentId));
+		}
+
+		final Pair<String, Class<?>> key = Tuples.<String, Class<?>>pair(componentId, type);
+		if (resolvedObjectsById.containsKey(key)) {
+			return type.cast(resolvedObjectsById.get(key));
 		}
 		final T component = getComponentLookupService(type).getComponent(componentId, getTransaction());
 		if (null == component) {
 			throw new ComponentNotFoundException(type.getSimpleName(), componentId);
 		}
+		resolvedObjectsById.put(key, component);
 		return component;
 	}
 	
@@ -295,6 +305,7 @@ public abstract class CDOEditingContext implements AutoCloseable {
 	 */
 	@Override
 	public void close() {
+		resolvedObjectsById.clear();
 		transaction.close();
 	}
 	
@@ -340,11 +351,60 @@ public abstract class CDOEditingContext implements AutoCloseable {
 	}
 	
 	/**
-	 * Returns with the {@link CodeSystemVersionGroup} for the repository where the current editing context works on.
-	 * @return the code system version group for storing meta information for the underlying repository such as code systems and versions.
+	 * Returns with an immutable list of the available code systems for the
+	 * repository where the current editing context works on.
+	 * 
+	 * @return an immutable list of the available code systems.
 	 */
-	public CodeSystemVersionGroup getCodeSystemVersionGroup() {
-		return (CodeSystemVersionGroup) getOnlyElement(transaction.getOrCreateResource(getMetaRootResourceName()).getContents());
+	public List<CodeSystem> getCodeSystems() {
+		if (!getBranch().equals(IBranchPath.MAIN_BRANCH)) {
+			throw new IllegalStateException(String.format("Snomed Code Systems are maintained on MAIN branch, this editing context uses %s", getBranch()));
+		}
+		
+		final CDOResource cdoResource = transaction.getOrCreateResource(getMetaRootResourceName());
+		return FluentIterable.from(cdoResource.getContents()).filter(CodeSystem.class).toList();
+	}
+	
+	public CodeSystem getCodeSystem(final String uniqueId) {
+		if (!getBranch().equals(IBranchPath.MAIN_BRANCH)) {
+			throw new IllegalStateException(String.format("Snomed Code Systems are maintained on MAIN branch, this editing context uses %s", getBranch()));
+		}
+		
+		final Optional<CodeSystem> optional = FluentIterable.from(getCodeSystems()).firstMatch(new Predicate<CodeSystem>() {
+			@Override
+			public boolean apply(final CodeSystem input) {
+				return input.getShortName().equals(uniqueId) || input.getCodeSystemOID().equals(uniqueId);
+			}
+		});
+
+		if (optional.isPresent()) {
+			return optional.get();
+		} else {
+			throw new CodeSystemNotFoundException(uniqueId);
+		}
+	}
+
+	/**
+	 * Adds the given code system to the available code systems.
+	 * 
+	 * @return <code>true</code> if the code system collection changed as a
+	 *         result of the call.
+	 * @deprecated use {@link #add(EObject)} instead
+	 */
+	public boolean addCodeSystem(final CodeSystem codeSystem) {
+		final CDOResource cdoResource = transaction.getOrCreateResource(getMetaRootResourceName());
+		return cdoResource.getContents().add(codeSystem);
+	}
+
+	/**
+	 * Removes the given code system from the available code systems.
+	 * 
+	 * @return true if the code system was removed as a result of this call.
+	 * @deprecated use {@link #delete(EObject)} instead
+	 */
+	public boolean removeCodeSystem(final CodeSystem codeSystem) {
+		final CDOResource cdoResource = transaction.getOrCreateResource(getMetaRootResourceName());
+		return cdoResource.getContents().remove(codeSystem);
 	}
 	
 	/**
@@ -376,7 +436,11 @@ public abstract class CDOEditingContext implements AutoCloseable {
 	 * @param object the object to be added to the contents of the editing context.
 	 */
 	public void add(final EObject object) {
-		getContents().add(checkNotNull(object, "object"));
+		if (object instanceof CodeSystem) {
+			transaction.getOrCreateResource(getMetaRootResourceName()).getContents().add(object);
+		} else {
+			getContents().add(checkNotNull(object, "object"));
+		}
 	}
 	
 	/**
@@ -391,11 +455,26 @@ public abstract class CDOEditingContext implements AutoCloseable {
 	/**
 	 * Deletes the object from this editing context and from his parent.
 	 * @param object
+	 * @throws ConflictException - if the component cannot be deleted
 	 */
-	public void delete(EObject object) {
-		EcoreUtil.remove(object);
+	public final void delete(EObject object) {
+		delete(object, false);
 	}
-
+	
+	/**
+	 * Deletes the object from this editing context and from his parent.
+	 * @param object - the object to be deleted
+	 * @param force - whether forcefully delete the object even if regular delete would not be possible
+	 * @throws ConflictException - if the component cannot be deleted
+	 */
+	public void delete(EObject object, boolean force) throws ConflictException {
+		if (object instanceof CodeSystem) {
+			transaction.getOrCreateResource(getMetaRootResourceName()).getContents().remove(object);
+		} else {
+			EcoreUtil.remove(object);
+		}
+	}
+	
 	/**
 	 * @return the repository-unique root resource name where the editing context contents are stored (may not be {@code null} or empty)
 	 */
@@ -481,10 +560,6 @@ public abstract class CDOEditingContext implements AutoCloseable {
 		}
 	}
 	
-	private static IBranchPath getActivePath(EPackage ePackage) {
-		return getTaskManager().getActiveBranch(getConnection(ePackage).getUuid());
-	}
-	
 	/*returns with the proper CDO connection service*/
 	private static ICDOConnection getConnection(EPackage ePackage) {
 		return getConnectionManager().get(ePackage);
@@ -495,10 +570,6 @@ public abstract class CDOEditingContext implements AutoCloseable {
 		final CDOTransaction transaction = getConnection(ePackage).createTransaction(branchPath);
 		transaction.options().setLockNotificationEnabled(true);
 		return transaction;
-	}
-
-	private static TaskManager getTaskManager() {
-		return getApplicationContext().getService(TaskManager.class);
 	}
 
 	private static ICDOConnectionManager getConnectionManager() {

@@ -85,13 +85,13 @@ public abstract class SnomedComponentApiAssert {
 				.build();
 	}
 	
-	private static Builder<Object, Object> createRelationshipRequestBuilder(final String sourceId, 
+	private static Builder<String, Object> createRelationshipRequestBuilder(final String sourceId, 
 			final String typeId, 
 			final String destinationId, 
 			final String moduleId, 
 			final String comment) {
 
-		return ImmutableMap.builder()
+		return ImmutableMap.<String, Object>builder()
 				.put("sourceId", sourceId)
 				.put("typeId", typeId)
 				.put("destinationId", destinationId)
@@ -99,7 +99,7 @@ public abstract class SnomedComponentApiAssert {
 				.put("commitComment", comment);
 	}
 
-	public static Map<?, ?> givenRelationshipRequestBody(final String sourceId, 
+	public static Map<String, Object> givenRelationshipRequestBody(final String sourceId, 
 			final String typeId, 
 			final String destinationId, 
 			final String moduleId, 
@@ -109,7 +109,7 @@ public abstract class SnomedComponentApiAssert {
 				.build();
 	}
 
-	public static Map<?, ?> givenRelationshipRequestBody(final String sourceId, 
+	public static Map<String, Object> givenRelationshipRequestBody(final String sourceId, 
 			final String typeId, 
 			final String destinationId, 
 			final String moduleId, 
@@ -124,9 +124,9 @@ public abstract class SnomedComponentApiAssert {
 	public static ValidatableResponse assertComponentReadWithStatus(final IBranchPath branchPath, 
 			final SnomedComponentType componentType, 
 			final String componentId, 
-			final int statusCode) {
+			final int statusCode, final String...expand) {
 
-		return getComponent(branchPath, componentType, componentId)
+		return getComponent(branchPath, componentType, componentId, expand)
 				.then().log().ifValidationFails().assertThat().statusCode(statusCode);
 	}
 
@@ -145,9 +145,10 @@ public abstract class SnomedComponentApiAssert {
 	 * @param branchPath the branch path to test
 	 * @param componentType the expected component type
 	 * @param componentId the expected component identifier
+	 * @param expand expansion parameters
 	 */
-	public static ValidatableResponse assertComponentExists(final IBranchPath branchPath, final SnomedComponentType componentType, final String componentId) {
-		return assertComponentReadWithStatus(branchPath, componentType, componentId, 200);
+	public static ValidatableResponse assertComponentExists(final IBranchPath branchPath, final SnomedComponentType componentType, final String componentId, final String...expand) {
+		return assertComponentReadWithStatus(branchPath, componentType, componentId, 200, expand);
 	}
 
 	/**
@@ -293,9 +294,35 @@ public abstract class SnomedComponentApiAssert {
 			final SnomedComponentType componentType, 
 			final String componentId) {
 
+		assertComponentCanBeDeleted(branchPath, componentType, componentId, false, 204);
+	}
+
+	public static void assertComponentCanBeDeleted(final IBranchPath branchPath, 
+			final SnomedComponentType componentType, 
+			final String componentId,
+			final boolean force) {
+
+		assertComponentCanBeDeleted(branchPath, componentType, componentId, force, 204);
+	}
+
+	public static void assertComponentCanNotBeDeleted(final IBranchPath branchPath, 
+			final SnomedComponentType componentType, 
+			final String componentId,
+			final boolean force) {
+
+		assertComponentCanBeDeleted(branchPath, componentType, componentId, force, 409);
+	}
+
+	private static void assertComponentCanBeDeleted(final IBranchPath branchPath, 
+			final SnomedComponentType componentType, 
+			final String componentId,
+			final boolean force,
+			final int statusCode) {
+
 		givenAuthenticatedRequest(SnomedApiTestConstants.SCT_API)
+		.given().queryParam("force", force)
 		.when().delete("/{path}/{componentType}/{id}", branchPath.getPath(), componentType.toLowerCasePlural(), componentId)
-		.then().log().ifValidationFails().assertThat().statusCode(204);
+		.then().log().ifValidationFails().assertThat().statusCode(statusCode);
 	}
 
 	/**
@@ -304,8 +331,8 @@ public abstract class SnomedComponentApiAssert {
 	 * @param branchPath the branch path to check
 	 * @param conceptId the concept identifier to check
 	 */
-	public static void assertConceptExists(final IBranchPath branchPath, final String conceptId) {
-		assertComponentExists(branchPath, SnomedComponentType.CONCEPT, conceptId);
+	public static ValidatableResponse assertConceptExists(final IBranchPath branchPath, final String conceptId) {
+		return assertComponentExists(branchPath, SnomedComponentType.CONCEPT, conceptId);
 	}
 
 	/**
@@ -324,8 +351,8 @@ public abstract class SnomedComponentApiAssert {
 	 * @param branchPath the branch path to check
 	 * @param descriptionId the description identifier to check
 	 */
-	public static void assertDescriptionExists(final IBranchPath branchPath, final String descriptionId) {
-		assertComponentExists(branchPath, SnomedComponentType.DESCRIPTION, descriptionId);
+	public static ValidatableResponse assertDescriptionExists(final IBranchPath branchPath, final String descriptionId, final String... expand) {
+		return assertComponentExists(branchPath, SnomedComponentType.DESCRIPTION, descriptionId, expand);
 	}
 
 	/**
@@ -343,9 +370,10 @@ public abstract class SnomedComponentApiAssert {
 	 * 
 	 * @param branchPath the branch path to check
 	 * @param relationshipId the relationship identifier to check
+	 * @return 
 	 */
-	public static void assertRelationshipExists(final IBranchPath branchPath, final String relationshipId) {
-		assertComponentExists(branchPath, SnomedComponentType.RELATIONSHIP, relationshipId);
+	public static ValidatableResponse assertRelationshipExists(final IBranchPath branchPath, final String relationshipId) {
+		return assertComponentExists(branchPath, SnomedComponentType.RELATIONSHIP, relationshipId);
 	}
 
 	/**
@@ -366,11 +394,23 @@ public abstract class SnomedComponentApiAssert {
 	 * @param descriptionId the expected description identifier
 	 */
 	public static void assertPreferredTermEquals(final IBranchPath branchPath, final String conceptId, final String descriptionId) {
+		assertPreferredTermEquals(branchPath, conceptId, descriptionId, "en-GB");
+	}
+	
+	/**
+	 * Asserts that the concept's preferred term in the given language reference set matches the specified description identifier.
+	 * 
+	 * @param branchPath the branch path to test
+	 * @param conceptId the identifier of the concept where the preferred term should be compared
+	 * @param descriptionId the expected description identifier
+	 * @param language - the language reference set
+	 */
+	public static void assertPreferredTermEquals(final IBranchPath branchPath, final String conceptId, final String descriptionId, final String language) {
 		givenAuthenticatedRequest(SnomedApiTestConstants.SCT_API)
-		.with().header("Accept-Language", "en-GB")
-		.when().get("/{path}/concepts/{conceptId}/pt", branchPath.getPath(), conceptId)
-		.then().assertThat().statusCode(200)
-		.and().body("id", equalTo(descriptionId));
+		.with().header("Accept-Language", language)
+		.when().get("/{path}/concepts/{conceptId}?expand=pt(),descriptions()", branchPath.getPath(), conceptId)
+		.then().log().ifValidationFails().assertThat().statusCode(200)
+		.and().body("pt.id", equalTo(descriptionId));
 	}
 
 	private SnomedComponentApiAssert() {

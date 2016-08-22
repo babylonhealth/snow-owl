@@ -26,13 +26,11 @@ import org.eclipse.core.runtime.IProgressMonitor;
 
 import com.b2international.commons.http.ExtendedLocale;
 import com.b2international.snowowl.core.ApplicationContext;
-import com.b2international.snowowl.datastore.BranchPathUtils;
 import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
 import com.b2international.snowowl.eventbus.IEventBus;
-import com.b2international.snowowl.snomed.SnomedPackage;
 import com.b2international.snowowl.snomed.core.domain.SnomedConcepts;
 import com.b2international.snowowl.snomed.core.lang.LanguageSetting;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptIndexEntry;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptDocument;
 import com.b2international.snowowl.snomed.datastore.request.SnomedConceptSearchRequestBuilder;
 import com.b2international.snowowl.snomed.datastore.request.SnomedRequests;
 import com.google.common.base.Optional;
@@ -51,8 +49,10 @@ public class SnomedRefSetAutoMapper {
 
 	private final String topLevelConceptId;
 	private final RefSetAutoMapperModel model;
+	private final String branch;
 	
-	public SnomedRefSetAutoMapper(final String topLevelConceptId, final RefSetAutoMapperModel model) {
+	public SnomedRefSetAutoMapper(final String branch, final String topLevelConceptId, final RefSetAutoMapperModel model) {
+		this.branch = branch;
 		this.model = model;
 		this.topLevelConceptId = topLevelConceptId;
 	}
@@ -65,7 +65,6 @@ public class SnomedRefSetAutoMapper {
 		final List<ExtendedLocale> locales = ApplicationContext.getServiceForClass(LanguageSetting.class).getLanguagePreference();
 		final IEventBus eventBus = ApplicationContext.getServiceForClass(IEventBus.class);
 		final String userId = ApplicationContext.getServiceForClass(ICDOConnectionManager.class).getUserId();
-		final String branchPath = BranchPathUtils.createActivePath(SnomedPackage.eINSTANCE).getPath();
 		
 		for (final Entry<Integer, String> entry : values.entrySet()) {
 			
@@ -90,12 +89,12 @@ public class SnomedRefSetAutoMapper {
 					
 					request.setLimit(limit);
 					
-					final SnomedConcepts concepts = request.build(branchPath).executeSync(eventBus);
-					List<SnomedConceptIndexEntry> candidates = SnomedConceptIndexEntry.fromConcepts(concepts);
+					final SnomedConcepts concepts = request.build(branch).executeSync(eventBus);
+					List<SnomedConceptDocument> candidates = SnomedConceptDocument.fromConcepts(concepts);
 					
 					if (candidates.isEmpty()) {
-						final SnomedConcepts fuzzyConcepts = request.withFuzzySearch().build(branchPath).executeSync(eventBus);
-						final List<SnomedConceptIndexEntry> fuzzyCandidates = SnomedConceptIndexEntry.fromConcepts(fuzzyConcepts);
+						final SnomedConcepts fuzzyConcepts = request.withFuzzySearch().build(branch).executeSync(eventBus);
+						final List<SnomedConceptDocument> fuzzyCandidates = SnomedConceptDocument.fromConcepts(fuzzyConcepts);
 						
 						if (fuzzyCandidates.isEmpty()) {
 							continue;
@@ -104,7 +103,7 @@ public class SnomedRefSetAutoMapper {
 						candidates = fuzzyCandidates;
 					}
 					
-					final Optional<SnomedConceptIndexEntry> candidate = getCandidate(candidates, entry.getKey());
+					final Optional<SnomedConceptDocument> candidate = getCandidate(candidates, entry.getKey());
 					
 					if (candidate.isPresent()) {
 						resolvedValues.put(entry.getKey(), candidate.get().getId());
@@ -128,7 +127,7 @@ public class SnomedRefSetAutoMapper {
 		return collectedValues;
 	}
 	
-	protected Optional<SnomedConceptIndexEntry> getCandidate(final Collection<SnomedConceptIndexEntry> candidates, final int rowIndex) {
+	protected Optional<SnomedConceptDocument> getCandidate(final Collection<SnomedConceptDocument> candidates, final int rowIndex) {
 		return FluentIterable.from(candidates).first();
 	}
 

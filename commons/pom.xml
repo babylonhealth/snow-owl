@@ -9,14 +9,21 @@
 	<parent>
 		<groupId>com.b2international.snowowl</groupId>
 		<artifactId>snowowl-parent</artifactId>
-		<version>4.6.3-SNAPSHOT</version>
+		<version>5.1.0-SNAPSHOT</version>
 	</parent>
 	
 	<modules>
+		<module>com.b2international.collections.api</module>
+		<module>com.b2international.collections.fastutil</module>
+		<module>com.b2international.collections.jackson</module>
 		<module>com.b2international.commons</module>
 		<module>com.b2international.commons.base</module>
 		<module>com.b2international.commons.groovy</module>
 		<module>com.b2international.commons.test</module>
+		<module>com.b2international.index.api</module>
+		<module>com.b2international.index.api.tests</module>
+		<module>com.b2international.index.api.tests.tools</module>
+		<module>com.b2international.index.lucene</module>
 	</modules>
 	
 </project>

@@ -18,7 +18,6 @@ package com.b2international.snowowl.datastore;
 import static com.b2international.commons.status.Statuses.error;
 import static com.b2international.commons.status.Statuses.ok;
 import static com.b2international.snowowl.core.ApplicationContext.getServiceForClass;
-import static com.b2international.snowowl.datastore.BranchPathUtils.createVersionPath;
 import static com.b2international.snowowl.datastore.CodeSystemUtils.TOOLING_FEATURE_NAME_COMPARATOR;
 import static com.b2international.snowowl.datastore.ICodeSystemVersion.INITIAL_STATE;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -40,7 +39,6 @@ import org.eclipse.core.runtime.IStatus;
 
 import com.b2international.snowowl.core.api.IBranchPath;
 import com.b2international.snowowl.datastore.cdo.ICDOConnectionManager;
-import com.b2international.snowowl.datastore.tasks.TaskManager;
 import com.google.common.base.Predicate;
 
 /**
@@ -53,10 +51,10 @@ public class VersionConfigurationImpl implements VersionConfiguration {
 	private final Map<String, List<ICodeSystemVersion>> allVersions;
 	private final Map<String, ICodeSystemVersion> currentVersions;
 
-	public VersionConfigurationImpl(final String userId) {
-		taskBranchPathMap = getTaskBranchPathMap();
-		allVersions = getAllVersions();
-		currentVersions = initCurrentVersions();
+	public VersionConfigurationImpl(final IBranchPathMap branchPathMap) {
+		this.taskBranchPathMap = branchPathMap;
+		this.allVersions = getAllVersions();
+		this.currentVersions = initCurrentVersions();
 	}
 
 	@Override
@@ -139,10 +137,9 @@ public class VersionConfigurationImpl implements VersionConfiguration {
 		
 		for (final Entry<String, ICodeSystemVersion> entry : currentVersions.entrySet()) {
 			if (!isLocked(entry.getValue())) {
-				currentBranchPathMap.put(entry.getKey(), createVersionPath(entry.getValue().getVersionId()));
+				currentBranchPathMap.put(entry.getKey(), BranchPathUtils.createPath(entry.getValue().getPath()));
 			}
 		}
-		
 		return new UserBranchPathMap(currentBranchPathMap);
 	}
 
@@ -186,14 +183,6 @@ public class VersionConfigurationImpl implements VersionConfiguration {
 		return allVersionsFromServer;
 	}
 
-	/**
-	 * Returns with the user's task aware branch path map.
-	 * @return a branch path map representing the task aware branch configuration of a use.r
-	 */
-	protected IBranchPathMap getTaskBranchPathMap() {
-		return getServiceForClass(TaskManager.class).getBranchPathMap();
-	}
-	
 	/**
 	 * Returns with the repository UUID of the slave repository. May return with 
 	 * {@code null} if the repository does not have any slave. 
@@ -248,6 +237,14 @@ public class VersionConfigurationImpl implements VersionConfiguration {
 	
 	private String toVersionString(final String versionId) {
 		return ICodeSystemVersion.INITIAL_STATE.equals(versionId) ? "initial state" : "'" + versionId + "'";
+	}
+	
+	/**
+	 * @param versionString
+	 * @return full branch path
+	 */
+	protected IBranchPath createVersionPath(String versionString) {
+		return BranchPathUtils.createPath(IBranchPath.MAIN_BRANCH + IBranchPath.SEPARATOR_CHAR + versionString);
 	}
 
 }

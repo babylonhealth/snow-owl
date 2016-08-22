@@ -17,8 +17,7 @@ package com.b2international.snowowl.snomed.datastore.taxonomy;
 
 import java.util.BitSet;
 
-import bak.pcj.set.LongSet;
-
+import com.b2international.collections.longs.LongSet;
 import com.b2international.commons.Pair;
 
 /**
@@ -30,7 +29,7 @@ public interface ISnomedTaxonomyBuilder {
 
 	void clear();
 
-	ISnomedTaxonomyBuilder build();
+	SnomedTaxonomyBuilderResult build();
 
 	void addEdge(final TaxonomyBuilderEdge edge);
 

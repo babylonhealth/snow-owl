@@ -24,10 +24,14 @@ import org.supercsv.cellprocessor.ParseBool;
 import org.supercsv.cellprocessor.ParseInt;
 import org.supercsv.cellprocessor.ift.CellProcessor;
 
+import com.b2international.snowowl.core.date.DateFormats;
+import com.b2international.snowowl.core.date.EffectiveTimes;
 import com.b2international.snowowl.snomed.Relationship;
-import com.b2international.snowowl.snomed.SnomedFactory;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
+import com.b2international.snowowl.snomed.SnomedFactory;
 import com.b2international.snowowl.snomed.common.SnomedRf2Headers;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDocument;
+import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRelationshipIndexEntry;
 import com.b2international.snowowl.snomed.importer.rf2.csv.RelationshipRow;
 import com.b2international.snowowl.snomed.importer.rf2.model.ComponentImportType;
 import com.b2international.snowowl.snomed.importer.rf2.model.IndexConfiguration;
@@ -75,6 +79,11 @@ public class SnomedRelationshipImporter extends AbstractSnomedTerminologyImporte
 		
 		super(createImportConfiguration(type), importContext, releaseFileStream, releaseFileIdentifier);
 	}
+	
+	@Override
+	protected Class<? extends SnomedDocument> getType() {
+		return SnomedRelationshipIndexEntry.class;
+	}
 
 	@Override
 	protected void importRow(final RelationshipRow currentRow) {
@@ -82,6 +91,10 @@ public class SnomedRelationshipImporter extends AbstractSnomedTerminologyImporte
 		final Relationship editedRelationship = getOrCreateComponent(currentRow.getSourceId(), currentRow.getId());
 		
 		if (skipCurrentRow(currentRow, editedRelationship)) {
+			getLogger().warn("Not importing concept '{}' with effective time '{}'; it should have been filtered from the input file.",
+					currentRow.getId(), 
+					EffectiveTimes.format(currentRow.getEffectiveTime(), DateFormats.SHORT));
+
 			return;
 		}
 

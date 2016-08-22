@@ -72,7 +72,7 @@ public interface ICodeSystem extends Serializable {
 	 *  feature or container repository.
 	 * @return the application specific ID.
 	 */
-	String getSnowOwlId();
+	String getTerminologyComponentId();
 	
 	/**
 	 * Returns with the unique ID of the repository where the current code system belongs to. 
@@ -85,5 +85,16 @@ public interface ICodeSystem extends Serializable {
 	 * @return
 	 */
 	long getStorageKey();
+	
+	/**
+	 * Returns the branch path of the code system.
+	 * @return the path for the code system.
+	 */
+	String getBranchPath();
+	
+	/**
+	 * Returns the unique ID of the base Code System.
+	 */
+	String getExtensionOf();
 
 }

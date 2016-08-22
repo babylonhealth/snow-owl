@@ -1,5 +1,5 @@
 /*
- * Copyright 2011-2015 B2i Healthcare Pte Ltd, http://b2i.sg
+ * Copyright 2011-2016 B2i Healthcare Pte Ltd, http://b2i.sg
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,21 +15,41 @@
  */
 package com.b2international.snowowl.core.events.metrics;
 
-import com.b2international.snowowl.core.ServiceProvider;
-import com.b2international.snowowl.core.events.Request;
-
 /**
- * @since 4.5
+ * @since 5.0
  */
 public interface Metrics {
 
-	<C extends ServiceProvider, R> Request<C, R> measure(Request<C, R> req);
-	
 	Metrics NOOP = new Metrics() {
 		@Override
-		public <C extends ServiceProvider, R> Request<C, R> measure(Request<C, R> req) {
-			return req;
+		public Timer timer(String name) {
+			return Timer.NOOP;
+		}
+
+		@Override
+		public void setExternalValue(String name, long value) {
 		}
 	};
-	
+
+	/**
+	 * Constant value for skipping externally measured metrics when serializing this {@link Metrics}.
+	 */
+	long SKIP = -1L;
+
+	/**
+	 * Returns a timer to measure elapsed time.
+	 * 
+	 * @param name
+	 * @return
+	 */
+	Timer timer(String name);
+
+	/**
+	 * Sets an externally measured metric value with the given name and value in this {@link Metrics registry}.
+	 * 
+	 * @param name
+	 * @param value
+	 */
+	void setExternalValue(String name, long value);
+
 }
