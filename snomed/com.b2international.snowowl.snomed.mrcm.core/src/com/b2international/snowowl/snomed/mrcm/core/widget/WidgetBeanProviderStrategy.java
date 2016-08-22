@@ -16,7 +16,6 @@
 package com.b2international.snowowl.snomed.mrcm.core.widget;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import java.util.Collection;
 import java.util.Collections;
