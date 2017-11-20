@@ -32,8 +32,13 @@ import com.b2international.commons.csv.CsvLexer.EOL;
 import com.b2international.commons.csv.CsvParser;
 import com.b2international.commons.csv.CsvSettings;
 import com.b2international.commons.csv.RecordParserCallback;
+import com.b2international.index.revision.RevisionIndex;
+import com.b2international.index.revision.RevisionIndexRead;
+import com.b2international.index.revision.RevisionSearcher;
 import com.b2international.snowowl.core.ApplicationContext;
+import com.b2international.snowowl.core.RepositoryManager;
 import com.b2international.snowowl.core.api.IBranchPath;
+import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.core.api.SnowowlServiceException;
 import com.b2international.snowowl.core.date.DateFormats;
 import com.b2international.snowowl.core.date.EffectiveTimes;
@@ -98,7 +103,7 @@ public class SnomedSubsetImporter {
 	private final Set<String> importedConceptIds;
 
 	public SnomedSubsetImporter(final String branchPath, String userId, boolean hasHeader, boolean skipEmptyLines, int idColumnNumber, int firstConceptRowNumber, int sheetNumber, int refSetType, String subsetName, String fileExtension,
-			String effectiveTime, String namespace, String fieldSeparator, String quoteCharacter, String lineFeedCharacter, File importFile) throws SnowowlServiceException {
+			String effectiveTime, String namespace, String fieldSeparator, String quoteCharacter, String lineFeedCharacter, File importFile) {
 		this.userId = userId;
 		this.branchPath = BranchPathUtils.createPath(branchPath);
 		this.hasHeader = hasHeader;
@@ -136,17 +141,26 @@ public class SnomedSubsetImporter {
 		}
 
 	}
-
+	
 	/**
 	 * Does the import of a reference set from the obtained file.
 	 * 
 	 * @return {@link SnomedUnimportedRefSets}
-	 * @throws SnowowlServiceException
-	 *             if there was an error during the import
 	 */
-	public SnomedUnimportedRefSets doImport() throws SnowowlServiceException {
+	public SnomedUnimportedRefSets doImport() {
+		RevisionIndex index = ApplicationContext.getServiceForClass(RepositoryManager.class).get(SnomedDatastoreActivator.REPOSITORY_UUID).service(RevisionIndex.class);
+		return index.read(branchPath.getPath(), new RevisionIndexRead<SnomedUnimportedRefSets>() {
+
+			@Override
+			public SnomedUnimportedRefSets execute(RevisionSearcher index) throws IOException {
+				return doImportInternal(index);
+			}
+		});
+		
+	}
+
+	private SnomedUnimportedRefSets doImportInternal(RevisionSearcher index) {
 		try (TransactionContext context = new ImportOnlySnomedTransactionContext(new SnomedEditingContext(this.branchPath))) {
-			
 			final SubsetInformation information = createSubsetInformation();
 			
 			if (null != information.getEffectiveTime()) {
@@ -187,12 +201,12 @@ public class SnomedSubsetImporter {
 			context.commit(userId, comment, DatastoreLockContextDescriptions.ROOT);
 		} catch (IOException e) {
 			LOGGER.error("Error while reading input file.");
-			throw new SnowowlServiceException("Error while reading input file.", e);
+			throw new SnowowlRuntimeException("Error while reading input file.", e);
 		} catch (ParseException e) {
 			LOGGER.error("Error while parsing input file.");
-			throw new SnowowlServiceException("Error while parsing input file.", e);
+			throw new SnowowlRuntimeException("Error while parsing input file.", e);
 		} catch (Exception e) {
-			throw new SnowowlServiceException("Error while importing subsets.", e);
+			throw new SnowowlRuntimeException("Error while importing subsets.", e);
 		}
 
 		return unimportedRefSets;

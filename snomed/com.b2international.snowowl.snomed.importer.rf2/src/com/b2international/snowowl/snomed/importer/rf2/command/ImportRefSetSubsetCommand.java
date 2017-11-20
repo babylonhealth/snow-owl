@@ -23,7 +23,7 @@ import org.eclipse.osgi.framework.console.CommandInterpreter;
 
 import com.b2international.commons.CompareUtils;
 import com.b2international.snowowl.core.api.IBranchPath;
-import com.b2international.snowowl.core.api.SnowowlServiceException;
+import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.server.console.CommandLineAuthenticator;
 import com.b2international.snowowl.snomed.importer.net4j.SnomedSubsetImportConfiguration;
 import com.b2international.snowowl.snomed.importer.net4j.SnomedSubsetImportConfiguration.SubsetEntry;
@@ -115,7 +115,7 @@ public class ImportRefSetSubsetCommand extends AbstractRf2ImporterCommand {
 			e.printStackTrace();
 		} catch (InvalidFormatException e) {
 			e.printStackTrace();
-		} catch (SnowowlServiceException e) {
+		} catch (SnowowlRuntimeException e) {
 			e.printStackTrace();
 		}
 	}

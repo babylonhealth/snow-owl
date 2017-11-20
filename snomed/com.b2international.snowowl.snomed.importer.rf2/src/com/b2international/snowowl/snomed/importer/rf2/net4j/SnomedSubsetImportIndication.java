@@ -26,7 +26,7 @@ import org.eclipse.net4j.util.io.ExtendedDataInputStream;
 import org.eclipse.net4j.util.io.ExtendedDataOutputStream;
 import org.eclipse.net4j.util.om.monitor.OMMonitor;
 
-import com.b2international.snowowl.core.api.SnowowlServiceException;
+import com.b2international.snowowl.core.api.SnowowlRuntimeException;
 import com.b2international.snowowl.snomed.importer.net4j.SnomedImportProtocolConstants;
 import com.b2international.snowowl.snomed.importer.net4j.SnomedUnimportedRefSets;
 import com.b2international.snowowl.snomed.importer.net4j.SnomedUnimportedRefSets.StoreRefSetMember;
@@ -137,7 +137,7 @@ public class SnomedSubsetImportIndication extends IndicationWithMonitoring {
 			}
 
 			monitor.worked();
-		} catch (final SnowowlServiceException e) {
+		} catch (final SnowowlRuntimeException e) {
 			throw new RemoteException(e.getMessage(), true);
 		} finally {
 			monitor.done();
