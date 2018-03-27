@@ -378,4 +378,20 @@ public class StringUtils {
 		
 		return builder.toString();
 	}
+	
+	/**
+	 * Compares alphanumeric string ids of the form %d*%s, for example 45c, 400a, or 42.
+	 * Expected result: 42 < 45c < 400a
+	 * @return A value from {-1, 0, 1} if id1 is less than, equal to, or more than id2, respectively
+	 */
+	public static int alphaNumericIdCompare(String id1, String id2) {
+		   Double numericId1 = Double.parseDouble(id1.replaceAll("\\D", ""));
+	       Double numericId2 = Double.parseDouble(id2.replaceAll("\\D", ""));
+	        
+	        if (numericId2.compareTo(numericId1) == 0 ) {
+	        	return id2.compareTo(id1);
+	        } else {
+	        	return numericId2.compareTo(numericId1);
+	        }
+	}
 }
