@@ -372,13 +372,22 @@ public interface MrcmPackage extends EPackage {
 	int CONCRETE_DOMAIN_ELEMENT_PREDICATE__TYPE = CONCEPT_MODEL_PREDICATE_FEATURE_COUNT + 2;
 
 	/**
+	 * The feature id for the '<em><b>Characteristic Type Concept Id</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 * @ordered
+	 */
+	int CONCRETE_DOMAIN_ELEMENT_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID = CONCEPT_MODEL_PREDICATE_FEATURE_COUNT + 3;
+
+	/**
 	 * The number of structural features of the '<em>Concrete Domain Element Predicate</em>' class.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @generated
 	 * @ordered
 	 */
-	int CONCRETE_DOMAIN_ELEMENT_PREDICATE_FEATURE_COUNT = CONCEPT_MODEL_PREDICATE_FEATURE_COUNT + 3;
+	int CONCRETE_DOMAIN_ELEMENT_PREDICATE_FEATURE_COUNT = CONCEPT_MODEL_PREDICATE_FEATURE_COUNT + 4;
 
 	/**
 	 * The meta object id for the '{@link com.b2international.snowowl.snomed.mrcm.impl.DependencyPredicateImpl <em>Dependency Predicate</em>}' class.
@@ -1426,6 +1435,17 @@ public interface MrcmPackage extends EPackage {
 	EAttribute getConcreteDomainElementPredicate_Type();
 
 	/**
+	 * Returns the meta object for the attribute '{@link com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getCharacteristicTypeConceptId <em>Characteristic Type Concept Id</em>}'.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @return the meta object for the attribute '<em>Characteristic Type Concept Id</em>'.
+	 * @see com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getCharacteristicTypeConceptId()
+	 * @see #getConcreteDomainElementPredicate()
+	 * @generated
+	 */
+	EAttribute getConcreteDomainElementPredicate_CharacteristicTypeConceptId();
+
+	/**
 	 * Returns the meta object for class '{@link com.b2international.snowowl.snomed.mrcm.DependencyPredicate <em>Dependency Predicate</em>}'.
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
@@ -1972,6 +1992,14 @@ public interface MrcmPackage extends EPackage {
 		 * @generated
 		 */
 		EAttribute CONCRETE_DOMAIN_ELEMENT_PREDICATE__TYPE = eINSTANCE.getConcreteDomainElementPredicate_Type();
+
+		/**
+		 * The meta object literal for the '<em><b>Characteristic Type Concept Id</b></em>' attribute feature.
+		 * <!-- begin-user-doc -->
+		 * <!-- end-user-doc -->
+		 * @generated
+		 */
+		EAttribute CONCRETE_DOMAIN_ELEMENT_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID = eINSTANCE.getConcreteDomainElementPredicate_CharacteristicTypeConceptId();
 
 		/**
 		 * The meta object literal for the '{@link com.b2international.snowowl.snomed.mrcm.impl.DependencyPredicateImpl <em>Dependency Predicate</em>}' class.

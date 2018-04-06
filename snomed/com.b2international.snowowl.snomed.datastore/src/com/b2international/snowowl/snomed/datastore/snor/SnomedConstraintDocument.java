@@ -123,10 +123,13 @@ public final class SnomedConstraintDocument extends RevisionDocument implements 
 			doc = SnomedConstraintDocument.descriptionBuilder().descriptionTypeId(((DescriptionPredicate) predicate).getTypeId());
 		} else if (predicate instanceof ConcreteDomainElementPredicate) {
 			final ConcreteDomainElementPredicate dataTypePredicate = (ConcreteDomainElementPredicate) predicate;
+			final String characteristicTypeConceptId = dataTypePredicate.getCharacteristicTypeConceptId();
+			final String characteristicType = Strings.isNullOrEmpty(characteristicTypeConceptId) ? "<" + Concepts.CHARACTERISTIC_TYPE : "<<" + characteristicTypeConceptId;
 			doc = SnomedConstraintDocument.dataTypeBuilder()
 					.dataTypeLabel(dataTypePredicate.getLabel())
 					.dataTypeName(dataTypePredicate.getName())
-					.dataType(dataTypePredicate.getType());
+					.dataType(dataTypePredicate.getType())
+					.characteristicTypeExpression(characteristicType);
 		} else if (predicate instanceof RelationshipPredicate) {
 			final RelationshipPredicate relationshipPredicate = (RelationshipPredicate) predicate;
 			final String characteristicTypeConceptId = relationshipPredicate.getCharacteristicTypeConceptId();

@@ -77,6 +77,7 @@ public enum ConceptModelEcoreValidator {
 		private static final Set<EStructuralFeature> ALLOWED_EMPTY_FEATURES = ImmutableSet.<EStructuralFeature>of(
 				// Characteristic type ID can be omitted from relationship predicate (defaults to all children of Concepts.CHARACTERISTIC_TYPE)
 				MrcmPackage.Literals.RELATIONSHIP_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID,
+				MrcmPackage.Literals.CONCRETE_DOMAIN_ELEMENT_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID,
 				// Constraint validation message is optional				
 				MrcmPackage.Literals.CONSTRAINT_BASE__VALIDATION_MESSAGE,
 				// Constraint descriptions are also optional

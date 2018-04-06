@@ -28,12 +28,13 @@ import com.b2international.snowowl.snomed.snomedrefset.DataType;
  * <!-- end-user-doc -->
  * <p>
  * The following features are implemented:
+ * </p>
  * <ul>
  *   <li>{@link com.b2international.snowowl.snomed.mrcm.impl.ConcreteDomainElementPredicateImpl#getName <em>Name</em>}</li>
  *   <li>{@link com.b2international.snowowl.snomed.mrcm.impl.ConcreteDomainElementPredicateImpl#getLabel <em>Label</em>}</li>
  *   <li>{@link com.b2international.snowowl.snomed.mrcm.impl.ConcreteDomainElementPredicateImpl#getType <em>Type</em>}</li>
+ *   <li>{@link com.b2international.snowowl.snomed.mrcm.impl.ConcreteDomainElementPredicateImpl#getCharacteristicTypeConceptId <em>Characteristic Type Concept Id</em>}</li>
  * </ul>
- * </p>
  *
  * @generated
  */
@@ -118,6 +119,24 @@ public class ConcreteDomainElementPredicateImpl extends ConceptModelPredicateImp
 	 */
 	public void setType(DataType newType) {
 		eSet(MrcmPackage.Literals.CONCRETE_DOMAIN_ELEMENT_PREDICATE__TYPE, newType);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public String getCharacteristicTypeConceptId() {
+		return (String)eGet(MrcmPackage.Literals.CONCRETE_DOMAIN_ELEMENT_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID, true);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
+	public void setCharacteristicTypeConceptId(String newCharacteristicTypeConceptId) {
+		eSet(MrcmPackage.Literals.CONCRETE_DOMAIN_ELEMENT_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID, newCharacteristicTypeConceptId);
 	}
 
 } //ConcreteDomainElementPredicateImpl

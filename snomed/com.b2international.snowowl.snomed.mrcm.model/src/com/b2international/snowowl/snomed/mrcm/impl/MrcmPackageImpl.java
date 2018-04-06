@@ -427,6 +427,15 @@ public class MrcmPackageImpl extends EPackageImpl implements MrcmPackage {
 	 * <!-- end-user-doc -->
 	 * @generated
 	 */
+	public EAttribute getConcreteDomainElementPredicate_CharacteristicTypeConceptId() {
+		return (EAttribute)concreteDomainElementPredicateEClass.getEStructuralFeatures().get(3);
+	}
+
+	/**
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @generated
+	 */
 	public EClass getDependencyPredicate() {
 		return dependencyPredicateEClass;
 	}
@@ -795,6 +804,7 @@ public class MrcmPackageImpl extends EPackageImpl implements MrcmPackage {
 		createEAttribute(concreteDomainElementPredicateEClass, CONCRETE_DOMAIN_ELEMENT_PREDICATE__NAME);
 		createEAttribute(concreteDomainElementPredicateEClass, CONCRETE_DOMAIN_ELEMENT_PREDICATE__LABEL);
 		createEAttribute(concreteDomainElementPredicateEClass, CONCRETE_DOMAIN_ELEMENT_PREDICATE__TYPE);
+		createEAttribute(concreteDomainElementPredicateEClass, CONCRETE_DOMAIN_ELEMENT_PREDICATE__CHARACTERISTIC_TYPE_CONCEPT_ID);
 
 		dependencyPredicateEClass = createEClass(DEPENDENCY_PREDICATE);
 		createEReference(dependencyPredicateEClass, DEPENDENCY_PREDICATE__CHILDREN);
@@ -914,6 +924,7 @@ public class MrcmPackageImpl extends EPackageImpl implements MrcmPackage {
 		initEAttribute(getConcreteDomainElementPredicate_Name(), ecorePackage.getEString(), "name", null, 1, 1, ConcreteDomainElementPredicate.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getConcreteDomainElementPredicate_Label(), ecorePackage.getEString(), "label", "", 1, 1, ConcreteDomainElementPredicate.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 		initEAttribute(getConcreteDomainElementPredicate_Type(), theSnomedrefsetPackage.getDataType(), "type", null, 1, 1, ConcreteDomainElementPredicate.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+		initEAttribute(getConcreteDomainElementPredicate_CharacteristicTypeConceptId(), ecorePackage.getEString(), "characteristicTypeConceptId", null, 1, 1, ConcreteDomainElementPredicate.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
 		initEClass(dependencyPredicateEClass, DependencyPredicate.class, "DependencyPredicate", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 		initEReference(getDependencyPredicate_Children(), this.getConceptModelPredicate(), null, "children", null, 0, -1, DependencyPredicate.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);

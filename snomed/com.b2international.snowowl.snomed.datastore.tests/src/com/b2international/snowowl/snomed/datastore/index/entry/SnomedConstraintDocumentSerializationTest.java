@@ -79,6 +79,7 @@ public class SnomedConstraintDocumentSerializationTest extends BaseRevisionIndex
 				.domain("queryExpressionTestField")
 				.dataTypeLabel("My Concrete Domain")
 				.dataTypeName("myConcreteDomain")
+				.characteristicTypeExpression(Concepts.STATED_RELATIONSHIP)
 				.dataType(DataType.STRING)
 				.cardinality(1, 1)
 				.build();

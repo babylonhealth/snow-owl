@@ -24,17 +24,17 @@ import com.b2international.snowowl.snomed.snomedrefset.DataType;
  *
  * <!-- begin-model-doc -->
  * Predicate to check for the presence of a concrete model element.
- * 
  * <!-- end-model-doc -->
  *
  * <p>
  * The following features are supported:
+ * </p>
  * <ul>
  *   <li>{@link com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getName <em>Name</em>}</li>
  *   <li>{@link com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getLabel <em>Label</em>}</li>
  *   <li>{@link com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getType <em>Type</em>}</li>
+ *   <li>{@link com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getCharacteristicTypeConceptId <em>Characteristic Type Concept Id</em>}</li>
  * </ul>
- * </p>
  *
  * @see com.b2international.snowowl.snomed.mrcm.MrcmPackage#getConcreteDomainElementPredicate()
  * @model
@@ -104,8 +104,8 @@ public interface ConcreteDomainElementPredicate extends ConceptModelPredicate {
 	 * </p>
 	 * <!-- end-user-doc -->
 	 * @return the value of the '<em>Type</em>' attribute.
-	 * @see com.b2international.snowowl.snomed.mrcm.DataType
-	 * @see #setType(DataType)
+	 * @see snomedrefset.DataType
+	 * @see #setType(snomedrefset.DataType)
 	 * @see com.b2international.snowowl.snomed.mrcm.MrcmPackage#getConcreteDomainElementPredicate_Type()
 	 * @model required="true"
 	 * @generated
@@ -117,10 +117,36 @@ public interface ConcreteDomainElementPredicate extends ConceptModelPredicate {
 	 * <!-- begin-user-doc -->
 	 * <!-- end-user-doc -->
 	 * @param value the new value of the '<em>Type</em>' attribute.
-	 * @see com.b2international.snowowl.snomed.mrcm.DataType
+	 * @see snomedrefset.DataType
 	 * @see #getType()
 	 * @generated
 	 */
 	void setType(DataType value);
+
+	/**
+	 * Returns the value of the '<em><b>Characteristic Type Concept Id</b></em>' attribute.
+	 * <!-- begin-user-doc -->
+	 * <p>
+	 * If the meaning of the '<em>Characteristic Type Concept Id</em>' attribute isn't clear,
+	 * there really should be more of a description here...
+	 * </p>
+	 * <!-- end-user-doc -->
+	 * @return the value of the '<em>Characteristic Type Concept Id</em>' attribute.
+	 * @see #setCharacteristicTypeConceptId(String)
+	 * @see com.b2international.snowowl.snomed.mrcm.MrcmPackage#getConcreteDomainElementPredicate_CharacteristicTypeConceptId()
+	 * @model required="true"
+	 * @generated
+	 */
+	String getCharacteristicTypeConceptId();
+
+	/**
+	 * Sets the value of the '{@link com.b2international.snowowl.snomed.mrcm.ConcreteDomainElementPredicate#getCharacteristicTypeConceptId <em>Characteristic Type Concept Id</em>}' attribute.
+	 * <!-- begin-user-doc -->
+	 * <!-- end-user-doc -->
+	 * @param value the new value of the '<em>Characteristic Type Concept Id</em>' attribute.
+	 * @see #getCharacteristicTypeConceptId()
+	 * @generated
+	 */
+	void setCharacteristicTypeConceptId(String value);
 
 } // ConcreteDomainElementPredicate
