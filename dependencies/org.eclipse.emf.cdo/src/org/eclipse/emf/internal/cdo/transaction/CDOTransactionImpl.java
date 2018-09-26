@@ -862,9 +862,11 @@ public class CDOTransactionImpl extends CDOViewImpl implements InternalCDOTransa
        		}
        	}
        	
-       	if (getObjectIfExists((CDOID) addFeatureDelta.getValue()) == null) {
-       		featureIterator.remove();
-       		continue;
+       	if (addFeatureDelta.getValue() instanceof CDOID) {
+       		if (getObjectIfExists((CDOID) addFeatureDelta.getValue()) == null) {
+           		featureIterator.remove();
+           		continue;
+           	}
        	}
        	
         // XXX (apeteri): Always add to the end of the list
