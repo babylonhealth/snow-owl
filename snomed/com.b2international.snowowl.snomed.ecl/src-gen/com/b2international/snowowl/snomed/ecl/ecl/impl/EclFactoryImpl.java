@@ -92,10 +92,14 @@ public class EclFactoryImpl extends EFactoryImpl implements EclFactory
       case EclPackage.NESTED_REFINEMENT: return createNestedRefinement();
       case EclPackage.ATTRIBUTE_GROUP: return createAttributeGroup();
       case EclPackage.ATTRIBUTE_CONSTRAINT: return createAttributeConstraint();
+      case EclPackage.TERM_CONSTRAINT: return createTermConstraint();
       case EclPackage.CARDINALITY: return createCardinality();
       case EclPackage.COMPARISON: return createComparison();
       case EclPackage.ATTRIBUTE_COMPARISON: return createAttributeComparison();
       case EclPackage.DATA_TYPE_COMPARISON: return createDataTypeComparison();
+      case EclPackage.TERM_COMPARISON: return createTermComparison();
+      case EclPackage.TERM_EQUALS: return createTermEquals();
+      case EclPackage.TERM_NOT_EQUALS: return createTermNotEquals();
       case EclPackage.ATTRIBUTE_VALUE_EQUALS: return createAttributeValueEquals();
       case EclPackage.ATTRIBUTE_VALUE_NOT_EQUALS: return createAttributeValueNotEquals();
       case EclPackage.STRING_VALUE_EQUALS: return createStringValueEquals();
@@ -295,6 +299,17 @@ public class EclFactoryImpl extends EFactoryImpl implements EclFactory
    * <!-- end-user-doc -->
    * @generated
    */
+  public TermConstraint createTermConstraint()
+  {
+    TermConstraintImpl termConstraint = new TermConstraintImpl();
+    return termConstraint;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
   public Cardinality createCardinality()
   {
     CardinalityImpl cardinality = new CardinalityImpl();
@@ -332,6 +347,39 @@ public class EclFactoryImpl extends EFactoryImpl implements EclFactory
   {
     DataTypeComparisonImpl dataTypeComparison = new DataTypeComparisonImpl();
     return dataTypeComparison;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public TermComparison createTermComparison()
+  {
+    TermComparisonImpl termComparison = new TermComparisonImpl();
+    return termComparison;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public TermEquals createTermEquals()
+  {
+    TermEqualsImpl termEquals = new TermEqualsImpl();
+    return termEquals;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public TermNotEquals createTermNotEquals()
+  {
+    TermNotEqualsImpl termNotEquals = new TermNotEqualsImpl();
+    return termNotEquals;
   }
 
   /**

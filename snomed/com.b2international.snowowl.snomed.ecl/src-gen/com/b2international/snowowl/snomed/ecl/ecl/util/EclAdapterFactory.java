@@ -163,6 +163,11 @@ public class EclAdapterFactory extends AdapterFactoryImpl
         return createAttributeConstraintAdapter();
       }
       @Override
+      public Adapter caseTermConstraint(TermConstraint object)
+      {
+        return createTermConstraintAdapter();
+      }
+      @Override
       public Adapter caseCardinality(Cardinality object)
       {
         return createCardinalityAdapter();
@@ -181,6 +186,21 @@ public class EclAdapterFactory extends AdapterFactoryImpl
       public Adapter caseDataTypeComparison(DataTypeComparison object)
       {
         return createDataTypeComparisonAdapter();
+      }
+      @Override
+      public Adapter caseTermComparison(TermComparison object)
+      {
+        return createTermComparisonAdapter();
+      }
+      @Override
+      public Adapter caseTermEquals(TermEquals object)
+      {
+        return createTermEqualsAdapter();
+      }
+      @Override
+      public Adapter caseTermNotEquals(TermNotEquals object)
+      {
+        return createTermNotEqualsAdapter();
       }
       @Override
       public Adapter caseAttributeValueEquals(AttributeValueEquals object)
@@ -550,6 +570,21 @@ public class EclAdapterFactory extends AdapterFactoryImpl
   }
 
   /**
+   * Creates a new adapter for an object of class '{@link com.b2international.snowowl.snomed.ecl.ecl.TermConstraint <em>Term Constraint</em>}'.
+   * <!-- begin-user-doc -->
+   * This default implementation returns null so that we can easily ignore cases;
+   * it's useful to ignore a case when inheritance will catch all the cases anyway.
+   * <!-- end-user-doc -->
+   * @return the new adapter.
+   * @see com.b2international.snowowl.snomed.ecl.ecl.TermConstraint
+   * @generated
+   */
+  public Adapter createTermConstraintAdapter()
+  {
+    return null;
+  }
+
+  /**
    * Creates a new adapter for an object of class '{@link com.b2international.snowowl.snomed.ecl.ecl.Cardinality <em>Cardinality</em>}'.
    * <!-- begin-user-doc -->
    * This default implementation returns null so that we can easily ignore cases;
@@ -605,6 +640,51 @@ public class EclAdapterFactory extends AdapterFactoryImpl
    * @generated
    */
   public Adapter createDataTypeComparisonAdapter()
+  {
+    return null;
+  }
+
+  /**
+   * Creates a new adapter for an object of class '{@link com.b2international.snowowl.snomed.ecl.ecl.TermComparison <em>Term Comparison</em>}'.
+   * <!-- begin-user-doc -->
+   * This default implementation returns null so that we can easily ignore cases;
+   * it's useful to ignore a case when inheritance will catch all the cases anyway.
+   * <!-- end-user-doc -->
+   * @return the new adapter.
+   * @see com.b2international.snowowl.snomed.ecl.ecl.TermComparison
+   * @generated
+   */
+  public Adapter createTermComparisonAdapter()
+  {
+    return null;
+  }
+
+  /**
+   * Creates a new adapter for an object of class '{@link com.b2international.snowowl.snomed.ecl.ecl.TermEquals <em>Term Equals</em>}'.
+   * <!-- begin-user-doc -->
+   * This default implementation returns null so that we can easily ignore cases;
+   * it's useful to ignore a case when inheritance will catch all the cases anyway.
+   * <!-- end-user-doc -->
+   * @return the new adapter.
+   * @see com.b2international.snowowl.snomed.ecl.ecl.TermEquals
+   * @generated
+   */
+  public Adapter createTermEqualsAdapter()
+  {
+    return null;
+  }
+
+  /**
+   * Creates a new adapter for an object of class '{@link com.b2international.snowowl.snomed.ecl.ecl.TermNotEquals <em>Term Not Equals</em>}'.
+   * <!-- begin-user-doc -->
+   * This default implementation returns null so that we can easily ignore cases;
+   * it's useful to ignore a case when inheritance will catch all the cases anyway.
+   * <!-- end-user-doc -->
+   * @return the new adapter.
+   * @see com.b2international.snowowl.snomed.ecl.ecl.TermNotEquals
+   * @generated
+   */
+  public Adapter createTermNotEqualsAdapter()
   {
     return null;
   }

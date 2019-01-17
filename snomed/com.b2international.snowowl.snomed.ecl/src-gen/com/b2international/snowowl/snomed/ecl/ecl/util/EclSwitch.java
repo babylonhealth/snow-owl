@@ -202,6 +202,14 @@ public class EclSwitch<T> extends Switch<T>
         if (result == null) result = defaultCase(theEObject);
         return result;
       }
+      case EclPackage.TERM_CONSTRAINT:
+      {
+        TermConstraint termConstraint = (TermConstraint)theEObject;
+        T result = caseTermConstraint(termConstraint);
+        if (result == null) result = caseRefinement(termConstraint);
+        if (result == null) result = defaultCase(theEObject);
+        return result;
+      }
       case EclPackage.CARDINALITY:
       {
         Cardinality cardinality = (Cardinality)theEObject;
@@ -229,6 +237,32 @@ public class EclSwitch<T> extends Switch<T>
         DataTypeComparison dataTypeComparison = (DataTypeComparison)theEObject;
         T result = caseDataTypeComparison(dataTypeComparison);
         if (result == null) result = caseComparison(dataTypeComparison);
+        if (result == null) result = defaultCase(theEObject);
+        return result;
+      }
+      case EclPackage.TERM_COMPARISON:
+      {
+        TermComparison termComparison = (TermComparison)theEObject;
+        T result = caseTermComparison(termComparison);
+        if (result == null) result = caseComparison(termComparison);
+        if (result == null) result = defaultCase(theEObject);
+        return result;
+      }
+      case EclPackage.TERM_EQUALS:
+      {
+        TermEquals termEquals = (TermEquals)theEObject;
+        T result = caseTermEquals(termEquals);
+        if (result == null) result = caseTermComparison(termEquals);
+        if (result == null) result = caseComparison(termEquals);
+        if (result == null) result = defaultCase(theEObject);
+        return result;
+      }
+      case EclPackage.TERM_NOT_EQUALS:
+      {
+        TermNotEquals termNotEquals = (TermNotEquals)theEObject;
+        T result = caseTermNotEquals(termNotEquals);
+        if (result == null) result = caseTermComparison(termNotEquals);
+        if (result == null) result = caseComparison(termNotEquals);
         if (result == null) result = defaultCase(theEObject);
         return result;
       }
@@ -685,6 +719,22 @@ public class EclSwitch<T> extends Switch<T>
   }
 
   /**
+   * Returns the result of interpreting the object as an instance of '<em>Term Constraint</em>'.
+   * <!-- begin-user-doc -->
+   * This implementation returns null;
+   * returning a non-null result will terminate the switch.
+   * <!-- end-user-doc -->
+   * @param object the target of the switch.
+   * @return the result of interpreting the object as an instance of '<em>Term Constraint</em>'.
+   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+   * @generated
+   */
+  public T caseTermConstraint(TermConstraint object)
+  {
+    return null;
+  }
+
+  /**
    * Returns the result of interpreting the object as an instance of '<em>Cardinality</em>'.
    * <!-- begin-user-doc -->
    * This implementation returns null;
@@ -744,6 +794,54 @@ public class EclSwitch<T> extends Switch<T>
    * @generated
    */
   public T caseDataTypeComparison(DataTypeComparison object)
+  {
+    return null;
+  }
+
+  /**
+   * Returns the result of interpreting the object as an instance of '<em>Term Comparison</em>'.
+   * <!-- begin-user-doc -->
+   * This implementation returns null;
+   * returning a non-null result will terminate the switch.
+   * <!-- end-user-doc -->
+   * @param object the target of the switch.
+   * @return the result of interpreting the object as an instance of '<em>Term Comparison</em>'.
+   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+   * @generated
+   */
+  public T caseTermComparison(TermComparison object)
+  {
+    return null;
+  }
+
+  /**
+   * Returns the result of interpreting the object as an instance of '<em>Term Equals</em>'.
+   * <!-- begin-user-doc -->
+   * This implementation returns null;
+   * returning a non-null result will terminate the switch.
+   * <!-- end-user-doc -->
+   * @param object the target of the switch.
+   * @return the result of interpreting the object as an instance of '<em>Term Equals</em>'.
+   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+   * @generated
+   */
+  public T caseTermEquals(TermEquals object)
+  {
+    return null;
+  }
+
+  /**
+   * Returns the result of interpreting the object as an instance of '<em>Term Not Equals</em>'.
+   * <!-- begin-user-doc -->
+   * This implementation returns null;
+   * returning a non-null result will terminate the switch.
+   * <!-- end-user-doc -->
+   * @param object the target of the switch.
+   * @return the result of interpreting the object as an instance of '<em>Term Not Equals</em>'.
+   * @see #doSwitch(org.eclipse.emf.ecore.EObject) doSwitch(EObject)
+   * @generated
+   */
+  public T caseTermNotEquals(TermNotEquals object)
   {
     return null;
   }

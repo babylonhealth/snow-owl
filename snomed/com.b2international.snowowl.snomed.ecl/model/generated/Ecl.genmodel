@@ -50,6 +50,9 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Ecl.ecore#//AttributeConstraint/attribute"/>
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Ecl.ecore#//AttributeConstraint/comparison"/>
     </genClasses>
+    <genClasses ecoreClass="Ecl.ecore#//TermConstraint">
+      <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Ecl.ecore#//TermConstraint/comparison"/>
+    </genClasses>
     <genClasses ecoreClass="Ecl.ecore#//Cardinality">
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Ecl.ecore#//Cardinality/min"/>
       <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Ecl.ecore#//Cardinality/max"/>
@@ -59,6 +62,11 @@
       <genFeatures property="None" children="true" createChild="true" ecoreFeature="ecore:EReference Ecl.ecore#//AttributeComparison/constraint"/>
     </genClasses>
     <genClasses ecoreClass="Ecl.ecore#//DataTypeComparison"/>
+    <genClasses ecoreClass="Ecl.ecore#//TermComparison">
+      <genFeatures createChild="false" ecoreFeature="ecore:EAttribute Ecl.ecore#//TermComparison/term"/>
+    </genClasses>
+    <genClasses ecoreClass="Ecl.ecore#//TermEquals"/>
+    <genClasses ecoreClass="Ecl.ecore#//TermNotEquals"/>
     <genClasses ecoreClass="Ecl.ecore#//AttributeValueEquals"/>
     <genClasses ecoreClass="Ecl.ecore#//AttributeValueNotEquals"/>
     <genClasses ecoreClass="Ecl.ecore#//StringValueEquals">

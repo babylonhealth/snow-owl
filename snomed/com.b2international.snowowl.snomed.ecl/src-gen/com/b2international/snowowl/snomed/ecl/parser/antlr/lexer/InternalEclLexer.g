@@ -89,6 +89,8 @@ RULE_LTE : '<=';
 
 RULE_HASH : '#';
 
+RULE_TERM : 'term';
+
 RULE_WS : (' '|'\t'|'\n'|'\r');
 
 RULE_ML_COMMENT : '/*' ( options {greedy=false;} : . )*'*/';

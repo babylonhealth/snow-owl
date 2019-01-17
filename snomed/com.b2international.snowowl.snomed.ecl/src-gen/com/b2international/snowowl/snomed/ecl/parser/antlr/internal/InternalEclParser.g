@@ -1286,6 +1286,18 @@ ruleSubRefinement returns [EObject current=null]
 			$current = $this_NestedRefinement_2.current;
 			afterParserOrEnumRuleCall();
 		}
+		    |
+		{
+			/* */
+		}
+		{
+			newCompositeNode(grammarAccess.getSubRefinementAccess().getTermConstraintParserRuleCall_3());
+		}
+		this_TermConstraint_3=ruleTermConstraint
+		{
+			$current = $this_TermConstraint_3.current;
+			afterParserOrEnumRuleCall();
+		}
 	)
 ;
 
@@ -1604,6 +1616,18 @@ ruleSubAttributeSet returns [EObject current=null]
 			$current = $this_NestedAttributeSet_1.current;
 			afterParserOrEnumRuleCall();
 		}
+		    |
+		{
+			/* */
+		}
+		{
+			newCompositeNode(grammarAccess.getSubAttributeSetAccess().getTermConstraintParserRuleCall_2());
+		}
+		this_TermConstraint_2=ruleTermConstraint
+		{
+			$current = $this_TermConstraint_2.current;
+			afterParserOrEnumRuleCall();
+		}
 	)
 ;
 
@@ -1747,6 +1771,48 @@ ruleAttributeConstraint returns [EObject current=null]
 	)
 ;
 
+// Entry rule entryRuleTermConstraint
+entryRuleTermConstraint returns [EObject current=null]:
+	{ newCompositeNode(grammarAccess.getTermConstraintRule()); }
+	iv_ruleTermConstraint=ruleTermConstraint
+	{ $current=$iv_ruleTermConstraint.current; }
+	EOF;
+
+// Rule TermConstraint
+ruleTermConstraint returns [EObject current=null]
+@init {
+	enterRule();
+}
+@after {
+	leaveRule();
+}:
+	(
+		this_TERM_0=RULE_TERM
+		{
+			newLeafNode(this_TERM_0, grammarAccess.getTermConstraintAccess().getTERMTerminalRuleCall_0());
+		}
+		(
+			(
+				{
+					newCompositeNode(grammarAccess.getTermConstraintAccess().getComparisonTermComparisonParserRuleCall_1_0());
+				}
+				lv_comparison_1_0=ruleTermComparison
+				{
+					if ($current==null) {
+						$current = createModelElementForParent(grammarAccess.getTermConstraintRule());
+					}
+					set(
+						$current,
+						"comparison",
+						lv_comparison_1_0,
+						"com.b2international.snowowl.snomed.ecl.Ecl.TermComparison");
+					afterParserOrEnumRuleCall();
+				}
+			)
+		)
+	)
+;
+
 // Entry rule entryRuleCardinality
 entryRuleCardinality returns [EObject current=null]:
 	{ newCompositeNode(grammarAccess.getCardinalityRule()); }
@@ -1853,6 +1919,18 @@ ruleComparison returns [EObject current=null]
 		this_DataTypeComparison_1=ruleDataTypeComparison
 		{
 			$current = $this_DataTypeComparison_1.current;
+			afterParserOrEnumRuleCall();
+		}
+		    |
+		{
+			/* */
+		}
+		{
+			newCompositeNode(grammarAccess.getComparisonAccess().getTermComparisonParserRuleCall_2());
+		}
+		this_TermComparison_2=ruleTermComparison
+		{
+			$current = $this_TermComparison_2.current;
 			afterParserOrEnumRuleCall();
 		}
 	)
@@ -2083,6 +2161,130 @@ ruleDataTypeComparison returns [EObject current=null]
 			$current = $this_DecimalValueLessThanEquals_13.current;
 			afterParserOrEnumRuleCall();
 		}
+	)
+;
+
+// Entry rule entryRuleTermComparison
+entryRuleTermComparison returns [EObject current=null]:
+	{ newCompositeNode(grammarAccess.getTermComparisonRule()); }
+	iv_ruleTermComparison=ruleTermComparison
+	{ $current=$iv_ruleTermComparison.current; }
+	EOF;
+
+// Rule TermComparison
+ruleTermComparison returns [EObject current=null]
+@init {
+	enterRule();
+}
+@after {
+	leaveRule();
+}:
+	(
+		{
+			/* */
+		}
+		{
+			newCompositeNode(grammarAccess.getTermComparisonAccess().getTermEqualsParserRuleCall_0());
+		}
+		this_TermEquals_0=ruleTermEquals
+		{
+			$current = $this_TermEquals_0.current;
+			afterParserOrEnumRuleCall();
+		}
+		    |
+		{
+			/* */
+		}
+		{
+			newCompositeNode(grammarAccess.getTermComparisonAccess().getTermNotEqualsParserRuleCall_1());
+		}
+		this_TermNotEquals_1=ruleTermNotEquals
+		{
+			$current = $this_TermNotEquals_1.current;
+			afterParserOrEnumRuleCall();
+		}
+	)
+;
+
+// Entry rule entryRuleTermEquals
+entryRuleTermEquals returns [EObject current=null]:
+	{ newCompositeNode(grammarAccess.getTermEqualsRule()); }
+	iv_ruleTermEquals=ruleTermEquals
+	{ $current=$iv_ruleTermEquals.current; }
+	EOF;
+
+// Rule TermEquals
+ruleTermEquals returns [EObject current=null]
+@init {
+	enterRule();
+}
+@after {
+	leaveRule();
+}:
+	(
+		this_EQUAL_0=RULE_EQUAL
+		{
+			newLeafNode(this_EQUAL_0, grammarAccess.getTermEqualsAccess().getEQUALTerminalRuleCall_0());
+		}
+		(
+			(
+				lv_term_1_0=RULE_STRING
+				{
+					newLeafNode(lv_term_1_0, grammarAccess.getTermEqualsAccess().getTermSTRINGTerminalRuleCall_1_0());
+				}
+				{
+					if ($current==null) {
+						$current = createModelElement(grammarAccess.getTermEqualsRule());
+					}
+					setWithLastConsumed(
+						$current,
+						"term",
+						lv_term_1_0,
+						"com.b2international.snowowl.snomed.ecl.Ecl.STRING");
+				}
+			)
+		)
+	)
+;
+
+// Entry rule entryRuleTermNotEquals
+entryRuleTermNotEquals returns [EObject current=null]:
+	{ newCompositeNode(grammarAccess.getTermNotEqualsRule()); }
+	iv_ruleTermNotEquals=ruleTermNotEquals
+	{ $current=$iv_ruleTermNotEquals.current; }
+	EOF;
+
+// Rule TermNotEquals
+ruleTermNotEquals returns [EObject current=null]
+@init {
+	enterRule();
+}
+@after {
+	leaveRule();
+}:
+	(
+		this_NOT_EQUAL_0=RULE_NOT_EQUAL
+		{
+			newLeafNode(this_NOT_EQUAL_0, grammarAccess.getTermNotEqualsAccess().getNOT_EQUALTerminalRuleCall_0());
+		}
+		(
+			(
+				lv_term_1_0=RULE_STRING
+				{
+					newLeafNode(lv_term_1_0, grammarAccess.getTermNotEqualsAccess().getTermSTRINGTerminalRuleCall_1_0());
+				}
+				{
+					if ($current==null) {
+						$current = createModelElement(grammarAccess.getTermNotEqualsRule());
+					}
+					setWithLastConsumed(
+						$current,
+						"term",
+						lv_term_1_0,
+						"com.b2international.snowowl.snomed.ecl.Ecl.STRING");
+				}
+			)
+		)
 	)
 ;
 

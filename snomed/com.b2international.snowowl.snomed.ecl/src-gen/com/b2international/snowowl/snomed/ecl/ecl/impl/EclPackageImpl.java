@@ -60,6 +60,10 @@ import com.b2international.snowowl.snomed.ecl.ecl.Refinement;
 import com.b2international.snowowl.snomed.ecl.ecl.Script;
 import com.b2international.snowowl.snomed.ecl.ecl.StringValueEquals;
 import com.b2international.snowowl.snomed.ecl.ecl.StringValueNotEquals;
+import com.b2international.snowowl.snomed.ecl.ecl.TermComparison;
+import com.b2international.snowowl.snomed.ecl.ecl.TermConstraint;
+import com.b2international.snowowl.snomed.ecl.ecl.TermEquals;
+import com.b2international.snowowl.snomed.ecl.ecl.TermNotEquals;
 
 import org.eclipse.emf.ecore.EAttribute;
 import org.eclipse.emf.ecore.EClass;
@@ -186,6 +190,13 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
    * <!-- end-user-doc -->
    * @generated
    */
+  private EClass termConstraintEClass = null;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
   private EClass cardinalityEClass = null;
 
   /**
@@ -208,6 +219,27 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
    * @generated
    */
   private EClass dataTypeComparisonEClass = null;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private EClass termComparisonEClass = null;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private EClass termEqualsEClass = null;
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  private EClass termNotEqualsEClass = null;
 
   /**
    * <!-- begin-user-doc -->
@@ -765,6 +797,26 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
    * <!-- end-user-doc -->
    * @generated
    */
+  public EClass getTermConstraint()
+  {
+    return termConstraintEClass;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public EReference getTermConstraint_Comparison()
+  {
+    return (EReference)termConstraintEClass.getEStructuralFeatures().get(0);
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
   public EClass getCardinality()
   {
     return cardinalityEClass;
@@ -828,6 +880,46 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
   public EClass getDataTypeComparison()
   {
     return dataTypeComparisonEClass;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public EClass getTermComparison()
+  {
+    return termComparisonEClass;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public EAttribute getTermComparison_Term()
+  {
+    return (EAttribute)termComparisonEClass.getEStructuralFeatures().get(0);
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public EClass getTermEquals()
+  {
+    return termEqualsEClass;
+  }
+
+  /**
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @generated
+   */
+  public EClass getTermNotEquals()
+  {
+    return termNotEqualsEClass;
   }
 
   /**
@@ -1437,6 +1529,9 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
     createEReference(attributeConstraintEClass, ATTRIBUTE_CONSTRAINT__ATTRIBUTE);
     createEReference(attributeConstraintEClass, ATTRIBUTE_CONSTRAINT__COMPARISON);
 
+    termConstraintEClass = createEClass(TERM_CONSTRAINT);
+    createEReference(termConstraintEClass, TERM_CONSTRAINT__COMPARISON);
+
     cardinalityEClass = createEClass(CARDINALITY);
     createEAttribute(cardinalityEClass, CARDINALITY__MIN);
     createEAttribute(cardinalityEClass, CARDINALITY__MAX);
@@ -1447,6 +1542,13 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
     createEReference(attributeComparisonEClass, ATTRIBUTE_COMPARISON__CONSTRAINT);
 
     dataTypeComparisonEClass = createEClass(DATA_TYPE_COMPARISON);
+
+    termComparisonEClass = createEClass(TERM_COMPARISON);
+    createEAttribute(termComparisonEClass, TERM_COMPARISON__TERM);
+
+    termEqualsEClass = createEClass(TERM_EQUALS);
+
+    termNotEqualsEClass = createEClass(TERM_NOT_EQUALS);
 
     attributeValueEqualsEClass = createEClass(ATTRIBUTE_VALUE_EQUALS);
 
@@ -1567,8 +1669,12 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
     nestedRefinementEClass.getESuperTypes().add(this.getRefinement());
     attributeGroupEClass.getESuperTypes().add(this.getRefinement());
     attributeConstraintEClass.getESuperTypes().add(this.getRefinement());
+    termConstraintEClass.getESuperTypes().add(this.getRefinement());
     attributeComparisonEClass.getESuperTypes().add(this.getComparison());
     dataTypeComparisonEClass.getESuperTypes().add(this.getComparison());
+    termComparisonEClass.getESuperTypes().add(this.getComparison());
+    termEqualsEClass.getESuperTypes().add(this.getTermComparison());
+    termNotEqualsEClass.getESuperTypes().add(this.getTermComparison());
     attributeValueEqualsEClass.getESuperTypes().add(this.getAttributeComparison());
     attributeValueNotEqualsEClass.getESuperTypes().add(this.getAttributeComparison());
     stringValueEqualsEClass.getESuperTypes().add(this.getDataTypeComparison());
@@ -1642,6 +1748,9 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
     initEReference(getAttributeConstraint_Attribute(), this.getExpressionConstraint(), null, "attribute", null, 0, 1, AttributeConstraint.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
     initEReference(getAttributeConstraint_Comparison(), this.getComparison(), null, "comparison", null, 0, 1, AttributeConstraint.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
+    initEClass(termConstraintEClass, TermConstraint.class, "TermConstraint", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+    initEReference(getTermConstraint_Comparison(), this.getTermComparison(), null, "comparison", null, 0, 1, TermConstraint.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+
     initEClass(cardinalityEClass, Cardinality.class, "Cardinality", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
     initEAttribute(getCardinality_Min(), ecorePackage.getEInt(), "min", null, 0, 1, Cardinality.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
     initEAttribute(getCardinality_Max(), ecorePackage.getEInt(), "max", null, 0, 1, Cardinality.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
@@ -1652,6 +1761,13 @@ public class EclPackageImpl extends EPackageImpl implements EclPackage
     initEReference(getAttributeComparison_Constraint(), this.getExpressionConstraint(), null, "constraint", null, 0, 1, AttributeComparison.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, IS_COMPOSITE, !IS_RESOLVE_PROXIES, !IS_UNSETTABLE, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
 
     initEClass(dataTypeComparisonEClass, DataTypeComparison.class, "DataTypeComparison", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+
+    initEClass(termComparisonEClass, TermComparison.class, "TermComparison", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+    initEAttribute(getTermComparison_Term(), ecorePackage.getEString(), "term", null, 0, 1, TermComparison.class, !IS_TRANSIENT, !IS_VOLATILE, IS_CHANGEABLE, !IS_UNSETTABLE, !IS_ID, IS_UNIQUE, !IS_DERIVED, IS_ORDERED);
+
+    initEClass(termEqualsEClass, TermEquals.class, "TermEquals", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
+
+    initEClass(termNotEqualsEClass, TermNotEquals.class, "TermNotEquals", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 
     initEClass(attributeValueEqualsEClass, AttributeValueEquals.class, "AttributeValueEquals", !IS_ABSTRACT, !IS_INTERFACE, IS_GENERATED_INSTANCE_CLASS);
 

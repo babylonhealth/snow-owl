@@ -89,6 +89,8 @@ public class EclSyntacticSequencer extends AbstractSyntacticSequencer {
 			return getSQUARE_CLOSEToken(semanticObject, ruleCall, node);
 		else if (ruleCall.getRule() == grammarAccess.getSQUARE_OPENRule())
 			return getSQUARE_OPENToken(semanticObject, ruleCall, node);
+		else if (ruleCall.getRule() == grammarAccess.getTERMRule())
+			return getTERMToken(semanticObject, ruleCall, node);
 		else if (ruleCall.getRule() == grammarAccess.getTORule())
 			return getTOToken(semanticObject, ruleCall, node);
 		else if (ruleCall.getRule() == grammarAccess.getWILDCARDRule())
@@ -304,6 +306,16 @@ public class EclSyntacticSequencer extends AbstractSyntacticSequencer {
 		if (node != null)
 			return getTokenText(node);
 		return "[";
+	}
+	
+	/**
+	 * terminal TERM:
+	 * 	'term';
+	 */
+	protected String getTERMToken(EObject semanticObject, RuleCall ruleCall, INode node) {
+		if (node != null)
+			return getTokenText(node);
+		return "term";
 	}
 	
 	/**

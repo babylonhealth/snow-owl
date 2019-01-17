@@ -641,12 +641,13 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		private final RuleCall cAttributeConstraintParserRuleCall_0 = (RuleCall)cAlternatives.eContents().get(0);
 		private final RuleCall cAttributeGroupParserRuleCall_1 = (RuleCall)cAlternatives.eContents().get(1);
 		private final RuleCall cNestedRefinementParserRuleCall_2 = (RuleCall)cAlternatives.eContents().get(2);
+		private final RuleCall cTermConstraintParserRuleCall_3 = (RuleCall)cAlternatives.eContents().get(3);
 		
 		//SubRefinement Refinement:
-		//	AttributeConstraint | AttributeGroup | NestedRefinement;
+		//	AttributeConstraint | AttributeGroup | NestedRefinement | TermConstraint;
 		@Override public ParserRule getRule() { return rule; }
 		
-		//AttributeConstraint | AttributeGroup | NestedRefinement
+		//AttributeConstraint | AttributeGroup | NestedRefinement | TermConstraint
 		public Alternatives getAlternatives() { return cAlternatives; }
 		
 		//AttributeConstraint
@@ -657,6 +658,9 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		
 		//NestedRefinement
 		public RuleCall getNestedRefinementParserRuleCall_2() { return cNestedRefinementParserRuleCall_2; }
+		
+		//TermConstraint
+		public RuleCall getTermConstraintParserRuleCall_3() { return cTermConstraintParserRuleCall_3; }
 	}
 	public class NestedRefinementElements extends AbstractParserRuleElementFinder {
 		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.NestedRefinement");
@@ -814,12 +818,13 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		private final Alternatives cAlternatives = (Alternatives)rule.eContents().get(1);
 		private final RuleCall cAttributeConstraintParserRuleCall_0 = (RuleCall)cAlternatives.eContents().get(0);
 		private final RuleCall cNestedAttributeSetParserRuleCall_1 = (RuleCall)cAlternatives.eContents().get(1);
+		private final RuleCall cTermConstraintParserRuleCall_2 = (RuleCall)cAlternatives.eContents().get(2);
 		
 		//SubAttributeSet Refinement:
-		//	AttributeConstraint | NestedAttributeSet;
+		//	AttributeConstraint | NestedAttributeSet | TermConstraint;
 		@Override public ParserRule getRule() { return rule; }
 		
-		//AttributeConstraint | NestedAttributeSet
+		//AttributeConstraint | NestedAttributeSet | TermConstraint
 		public Alternatives getAlternatives() { return cAlternatives; }
 		
 		//AttributeConstraint
@@ -827,6 +832,9 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		
 		//NestedAttributeSet
 		public RuleCall getNestedAttributeSetParserRuleCall_1() { return cNestedAttributeSetParserRuleCall_1; }
+		
+		//TermConstraint
+		public RuleCall getTermConstraintParserRuleCall_2() { return cTermConstraintParserRuleCall_2; }
 	}
 	public class NestedAttributeSetElements extends AbstractParserRuleElementFinder {
 		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.NestedAttributeSet");
@@ -898,6 +906,29 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		//Comparison
 		public RuleCall getComparisonComparisonParserRuleCall_3_0() { return cComparisonComparisonParserRuleCall_3_0; }
 	}
+	public class TermConstraintElements extends AbstractParserRuleElementFinder {
+		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.TermConstraint");
+		private final Group cGroup = (Group)rule.eContents().get(1);
+		private final RuleCall cTERMTerminalRuleCall_0 = (RuleCall)cGroup.eContents().get(0);
+		private final Assignment cComparisonAssignment_1 = (Assignment)cGroup.eContents().get(1);
+		private final RuleCall cComparisonTermComparisonParserRuleCall_1_0 = (RuleCall)cComparisonAssignment_1.eContents().get(0);
+		
+		//TermConstraint:
+		//	TERM comparison=TermComparison;
+		@Override public ParserRule getRule() { return rule; }
+		
+		//TERM comparison=TermComparison
+		public Group getGroup() { return cGroup; }
+		
+		//TERM
+		public RuleCall getTERMTerminalRuleCall_0() { return cTERMTerminalRuleCall_0; }
+		
+		//comparison=TermComparison
+		public Assignment getComparisonAssignment_1() { return cComparisonAssignment_1; }
+		
+		//TermComparison
+		public RuleCall getComparisonTermComparisonParserRuleCall_1_0() { return cComparisonTermComparisonParserRuleCall_1_0; }
+	}
 	public class CardinalityElements extends AbstractParserRuleElementFinder {
 		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.Cardinality");
 		private final Group cGroup = (Group)rule.eContents().get(1);
@@ -942,12 +973,13 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		private final Alternatives cAlternatives = (Alternatives)rule.eContents().get(1);
 		private final RuleCall cAttributeComparisonParserRuleCall_0 = (RuleCall)cAlternatives.eContents().get(0);
 		private final RuleCall cDataTypeComparisonParserRuleCall_1 = (RuleCall)cAlternatives.eContents().get(1);
+		private final RuleCall cTermComparisonParserRuleCall_2 = (RuleCall)cAlternatives.eContents().get(2);
 		
 		//Comparison:
-		//	AttributeComparison | DataTypeComparison;
+		//	AttributeComparison | DataTypeComparison | TermComparison;
 		@Override public ParserRule getRule() { return rule; }
 		
-		//AttributeComparison | DataTypeComparison
+		//AttributeComparison | DataTypeComparison | TermComparison
 		public Alternatives getAlternatives() { return cAlternatives; }
 		
 		//AttributeComparison
@@ -955,6 +987,9 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		
 		//DataTypeComparison
 		public RuleCall getDataTypeComparisonParserRuleCall_1() { return cDataTypeComparisonParserRuleCall_1; }
+		
+		//TermComparison
+		public RuleCall getTermComparisonParserRuleCall_2() { return cTermComparisonParserRuleCall_2; }
 	}
 	public class AttributeComparisonElements extends AbstractParserRuleElementFinder {
 		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.AttributeComparison");
@@ -1057,6 +1092,71 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		
 		//DecimalValueLessThanEquals
 		public RuleCall getDecimalValueLessThanEqualsParserRuleCall_13() { return cDecimalValueLessThanEqualsParserRuleCall_13; }
+	}
+	public class TermComparisonElements extends AbstractParserRuleElementFinder {
+		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.TermComparison");
+		private final Alternatives cAlternatives = (Alternatives)rule.eContents().get(1);
+		private final RuleCall cTermEqualsParserRuleCall_0 = (RuleCall)cAlternatives.eContents().get(0);
+		private final RuleCall cTermNotEqualsParserRuleCall_1 = (RuleCall)cAlternatives.eContents().get(1);
+		
+		//TermComparison:
+		//	TermEquals | TermNotEquals;
+		@Override public ParserRule getRule() { return rule; }
+		
+		//TermEquals | TermNotEquals
+		public Alternatives getAlternatives() { return cAlternatives; }
+		
+		//TermEquals
+		public RuleCall getTermEqualsParserRuleCall_0() { return cTermEqualsParserRuleCall_0; }
+		
+		//TermNotEquals
+		public RuleCall getTermNotEqualsParserRuleCall_1() { return cTermNotEqualsParserRuleCall_1; }
+	}
+	public class TermEqualsElements extends AbstractParserRuleElementFinder {
+		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.TermEquals");
+		private final Group cGroup = (Group)rule.eContents().get(1);
+		private final RuleCall cEQUALTerminalRuleCall_0 = (RuleCall)cGroup.eContents().get(0);
+		private final Assignment cTermAssignment_1 = (Assignment)cGroup.eContents().get(1);
+		private final RuleCall cTermSTRINGTerminalRuleCall_1_0 = (RuleCall)cTermAssignment_1.eContents().get(0);
+		
+		//TermEquals:
+		//	EQUAL term=STRING;
+		@Override public ParserRule getRule() { return rule; }
+		
+		//EQUAL term=STRING
+		public Group getGroup() { return cGroup; }
+		
+		//EQUAL
+		public RuleCall getEQUALTerminalRuleCall_0() { return cEQUALTerminalRuleCall_0; }
+		
+		//term=STRING
+		public Assignment getTermAssignment_1() { return cTermAssignment_1; }
+		
+		//STRING
+		public RuleCall getTermSTRINGTerminalRuleCall_1_0() { return cTermSTRINGTerminalRuleCall_1_0; }
+	}
+	public class TermNotEqualsElements extends AbstractParserRuleElementFinder {
+		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.TermNotEquals");
+		private final Group cGroup = (Group)rule.eContents().get(1);
+		private final RuleCall cNOT_EQUALTerminalRuleCall_0 = (RuleCall)cGroup.eContents().get(0);
+		private final Assignment cTermAssignment_1 = (Assignment)cGroup.eContents().get(1);
+		private final RuleCall cTermSTRINGTerminalRuleCall_1_0 = (RuleCall)cTermAssignment_1.eContents().get(0);
+		
+		//TermNotEquals:
+		//	NOT_EQUAL term=STRING;
+		@Override public ParserRule getRule() { return rule; }
+		
+		//NOT_EQUAL term=STRING
+		public Group getGroup() { return cGroup; }
+		
+		//NOT_EQUAL
+		public RuleCall getNOT_EQUALTerminalRuleCall_0() { return cNOT_EQUALTerminalRuleCall_0; }
+		
+		//term=STRING
+		public Assignment getTermAssignment_1() { return cTermAssignment_1; }
+		
+		//STRING
+		public RuleCall getTermSTRINGTerminalRuleCall_1_0() { return cTermSTRINGTerminalRuleCall_1_0; }
 	}
 	public class AttributeValueEqualsElements extends AbstractParserRuleElementFinder {
 		private final ParserRule rule = (ParserRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.AttributeValueEquals");
@@ -1750,10 +1850,14 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	private final SubAttributeSetElements pSubAttributeSet;
 	private final NestedAttributeSetElements pNestedAttributeSet;
 	private final AttributeConstraintElements pAttributeConstraint;
+	private final TermConstraintElements pTermConstraint;
 	private final CardinalityElements pCardinality;
 	private final ComparisonElements pComparison;
 	private final AttributeComparisonElements pAttributeComparison;
 	private final DataTypeComparisonElements pDataTypeComparison;
+	private final TermComparisonElements pTermComparison;
+	private final TermEqualsElements pTermEquals;
+	private final TermNotEqualsElements pTermNotEquals;
 	private final AttributeValueEqualsElements pAttributeValueEquals;
 	private final AttributeValueNotEqualsElements pAttributeValueNotEquals;
 	private final StringValueEqualsElements pStringValueEquals;
@@ -1806,6 +1910,7 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	private final TerminalRule tGTE;
 	private final TerminalRule tLTE;
 	private final TerminalRule tHASH;
+	private final TerminalRule tTERM;
 	private final TerminalRule tWS;
 	private final TerminalRule tML_COMMENT;
 	private final TerminalRule tSL_COMMENT;
@@ -1846,10 +1951,14 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		this.pSubAttributeSet = new SubAttributeSetElements();
 		this.pNestedAttributeSet = new NestedAttributeSetElements();
 		this.pAttributeConstraint = new AttributeConstraintElements();
+		this.pTermConstraint = new TermConstraintElements();
 		this.pCardinality = new CardinalityElements();
 		this.pComparison = new ComparisonElements();
 		this.pAttributeComparison = new AttributeComparisonElements();
 		this.pDataTypeComparison = new DataTypeComparisonElements();
+		this.pTermComparison = new TermComparisonElements();
+		this.pTermEquals = new TermEqualsElements();
+		this.pTermNotEquals = new TermNotEqualsElements();
 		this.pAttributeValueEquals = new AttributeValueEqualsElements();
 		this.pAttributeValueNotEquals = new AttributeValueNotEqualsElements();
 		this.pStringValueEquals = new StringValueEqualsElements();
@@ -1902,6 +2011,7 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		this.tGTE = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.GTE");
 		this.tLTE = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.LTE");
 		this.tHASH = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.HASH");
+		this.tTERM = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.TERM");
 		this.tWS = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.WS");
 		this.tML_COMMENT = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.ML_COMMENT");
 		this.tSL_COMMENT = (TerminalRule) GrammarUtil.findRuleForName(getGrammar(), "com.b2international.snowowl.snomed.ecl.Ecl.SL_COMMENT");
@@ -2143,7 +2253,7 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	}
 	
 	//SubRefinement Refinement:
-	//	AttributeConstraint | AttributeGroup | NestedRefinement;
+	//	AttributeConstraint | AttributeGroup | NestedRefinement | TermConstraint;
 	public SubRefinementElements getSubRefinementAccess() {
 		return pSubRefinement;
 	}
@@ -2203,7 +2313,7 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	}
 	
 	//SubAttributeSet Refinement:
-	//	AttributeConstraint | NestedAttributeSet;
+	//	AttributeConstraint | NestedAttributeSet | TermConstraint;
 	public SubAttributeSetElements getSubAttributeSetAccess() {
 		return pSubAttributeSet;
 	}
@@ -2232,6 +2342,16 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 		return getAttributeConstraintAccess().getRule();
 	}
 	
+	//TermConstraint:
+	//	TERM comparison=TermComparison;
+	public TermConstraintElements getTermConstraintAccess() {
+		return pTermConstraint;
+	}
+	
+	public ParserRule getTermConstraintRule() {
+		return getTermConstraintAccess().getRule();
+	}
+	
 	//Cardinality:
 	//	SQUARE_OPEN min=NonNegativeInteger TO max=MaxValue SQUARE_CLOSE;
 	public CardinalityElements getCardinalityAccess() {
@@ -2243,7 +2363,7 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	}
 	
 	//Comparison:
-	//	AttributeComparison | DataTypeComparison;
+	//	AttributeComparison | DataTypeComparison | TermComparison;
 	public ComparisonElements getComparisonAccess() {
 		return pComparison;
 	}
@@ -2283,6 +2403,36 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	
 	public ParserRule getDataTypeComparisonRule() {
 		return getDataTypeComparisonAccess().getRule();
+	}
+	
+	//TermComparison:
+	//	TermEquals | TermNotEquals;
+	public TermComparisonElements getTermComparisonAccess() {
+		return pTermComparison;
+	}
+	
+	public ParserRule getTermComparisonRule() {
+		return getTermComparisonAccess().getRule();
+	}
+	
+	//TermEquals:
+	//	EQUAL term=STRING;
+	public TermEqualsElements getTermEqualsAccess() {
+		return pTermEquals;
+	}
+	
+	public ParserRule getTermEqualsRule() {
+		return getTermEqualsAccess().getRule();
+	}
+	
+	//TermNotEquals:
+	//	NOT_EQUAL term=STRING;
+	public TermNotEqualsElements getTermNotEqualsAccess() {
+		return pTermNotEquals;
+	}
+	
+	public ParserRule getTermNotEqualsRule() {
+		return getTermNotEqualsAccess().getRule();
 	}
 	
 	//AttributeValueEquals:
@@ -2689,6 +2839,12 @@ public class EclGrammarAccess extends AbstractGrammarElementFinder {
 	//	'#';
 	public TerminalRule getHASHRule() {
 		return tHASH;
+	}
+	
+	//terminal TERM:
+	//	'term';
+	public TerminalRule getTERMRule() {
+		return tTERM;
 	}
 	
 	//terminal WS:

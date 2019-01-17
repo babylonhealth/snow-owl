@@ -60,6 +60,10 @@
     <eStructuralFeatures xsi:type="ecore:EReference" name="comparison" eType="#//Comparison"
         containment="true"/>
   </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TermConstraint" eSuperTypes="#//Refinement">
+    <eStructuralFeatures xsi:type="ecore:EReference" name="comparison" eType="#//TermComparison"
+        containment="true"/>
+  </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="Cardinality">
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="min" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
     <eStructuralFeatures xsi:type="ecore:EAttribute" name="max" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EInt"/>
@@ -70,6 +74,11 @@
         containment="true"/>
   </eClassifiers>
   <eClassifiers xsi:type="ecore:EClass" name="DataTypeComparison" eSuperTypes="#//Comparison"/>
+  <eClassifiers xsi:type="ecore:EClass" name="TermComparison" eSuperTypes="#//Comparison">
+    <eStructuralFeatures xsi:type="ecore:EAttribute" name="term" eType="ecore:EDataType http://www.eclipse.org/emf/2002/Ecore#//EString"/>
+  </eClassifiers>
+  <eClassifiers xsi:type="ecore:EClass" name="TermEquals" eSuperTypes="#//TermComparison"/>
+  <eClassifiers xsi:type="ecore:EClass" name="TermNotEquals" eSuperTypes="#//TermComparison"/>
   <eClassifiers xsi:type="ecore:EClass" name="AttributeValueEquals" eSuperTypes="#//AttributeComparison"/>
   <eClassifiers xsi:type="ecore:EClass" name="AttributeValueNotEquals" eSuperTypes="#//AttributeComparison"/>
   <eClassifiers xsi:type="ecore:EClass" name="StringValueEquals" eSuperTypes="#//DataTypeComparison">

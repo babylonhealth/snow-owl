@@ -171,6 +171,15 @@ public interface EclFactory extends EFactory
   AttributeConstraint createAttributeConstraint();
 
   /**
+   * Returns a new object of class '<em>Term Constraint</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return a new object of class '<em>Term Constraint</em>'.
+   * @generated
+   */
+  TermConstraint createTermConstraint();
+
+  /**
    * Returns a new object of class '<em>Cardinality</em>'.
    * <!-- begin-user-doc -->
    * <!-- end-user-doc -->
@@ -205,6 +214,33 @@ public interface EclFactory extends EFactory
    * @generated
    */
   DataTypeComparison createDataTypeComparison();
+
+  /**
+   * Returns a new object of class '<em>Term Comparison</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return a new object of class '<em>Term Comparison</em>'.
+   * @generated
+   */
+  TermComparison createTermComparison();
+
+  /**
+   * Returns a new object of class '<em>Term Equals</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return a new object of class '<em>Term Equals</em>'.
+   * @generated
+   */
+  TermEquals createTermEquals();
+
+  /**
+   * Returns a new object of class '<em>Term Not Equals</em>'.
+   * <!-- begin-user-doc -->
+   * <!-- end-user-doc -->
+   * @return a new object of class '<em>Term Not Equals</em>'.
+   * @generated
+   */
+  TermNotEquals createTermNotEquals();
 
   /**
    * Returns a new object of class '<em>Attribute Value Equals</em>'.

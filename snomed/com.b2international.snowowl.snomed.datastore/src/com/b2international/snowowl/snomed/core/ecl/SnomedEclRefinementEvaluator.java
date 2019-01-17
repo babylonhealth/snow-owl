@@ -44,8 +44,10 @@ import com.b2international.snowowl.core.request.SearchResourceRequest;
 import com.b2international.snowowl.eventbus.IEventBus;
 import com.b2international.snowowl.snomed.SnomedConstants.Concepts;
 import com.b2international.snowowl.snomed.common.SnomedRf2Headers;
+import com.b2international.snowowl.snomed.core.domain.SnomedConcept;
 import com.b2international.snowowl.snomed.core.domain.refset.SnomedReferenceSetMembers;
 import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRefSetMemberIndexEntry;
+import com.b2international.snowowl.snomed.datastore.request.SnomedConceptSearchRequestBuilder;
 import com.b2international.snowowl.snomed.datastore.request.SnomedRelationshipSearchRequestBuilder;
 import com.b2international.snowowl.snomed.datastore.request.SnomedRequests;
 import com.b2international.snowowl.snomed.ecl.ecl.AndRefinement;
@@ -72,6 +74,9 @@ import com.b2international.snowowl.snomed.ecl.ecl.OrRefinement;
 import com.b2international.snowowl.snomed.ecl.ecl.Refinement;
 import com.b2international.snowowl.snomed.ecl.ecl.StringValueEquals;
 import com.b2international.snowowl.snomed.ecl.ecl.StringValueNotEquals;
+import com.b2international.snowowl.snomed.ecl.ecl.TermComparison;
+import com.b2international.snowowl.snomed.ecl.ecl.TermConstraint;
+import com.b2international.snowowl.snomed.ecl.ecl.TermEquals;
 import com.b2international.snowowl.snomed.snomedrefset.DataType;
 import com.b2international.snowowl.snomed.snomedrefset.SnomedRefSetType;
 import com.google.common.base.Function;
@@ -112,6 +117,50 @@ final class SnomedEclRefinementEvaluator {
 	
 	protected Promise<Expression> eval(BranchContext context, Refinement refinement) {
 		return SnomedEclEvaluationRequest.throwUnsupported(refinement); 
+	}
+	
+	protected Promise<Expression> eval(final BranchContext context, final TermConstraint refinement) { //TODO TermConstraint
+		TermComparison comparison = refinement.getComparison();		
+		String term = comparison.getTerm();
+		
+		return evalDescriptions(context, term)
+			.thenWith(input -> {
+			if (comparison instanceof TermEquals) {
+				return focusConcepts.resolveToAndExpression(context, input);
+			} else {
+				return focusConcepts.resolveToExclusionExpression(context, input);
+			}
+		})
+		.failWith(throwable -> {
+			if (throwable instanceof MatchAll) {
+				return focusConcepts.resolveToExpression(context);
+			}
+			if (throwable instanceof RuntimeException) {
+				throw (RuntimeException) throwable;
+			} else {
+				throw new SnowowlRuntimeException(throwable);
+			}
+		});
+	}
+	
+	private Promise<Set<String>> evalDescriptions(BranchContext context, String term) {
+		SnomedConceptSearchRequestBuilder requestBuilder = SnomedRequests.prepareSearchConcept()
+				.all()
+				.filterByActive(true)
+				.filterByTerm(term);
+		
+		if (focusConcepts.isAnyExpression()) {
+			requestBuilder.filterByIds(focusConcepts.resolve(context).getSync());
+		}
+				
+		return requestBuilder
+			.build(context.id(), context.branchPath())
+			.execute(context.service(IEventBus.class))
+			.then( concepts -> {
+				return concepts.stream()
+						.map(SnomedConcept::getId)
+						.collect(Collectors.toSet());
+			});
 	}
 	
 	/**

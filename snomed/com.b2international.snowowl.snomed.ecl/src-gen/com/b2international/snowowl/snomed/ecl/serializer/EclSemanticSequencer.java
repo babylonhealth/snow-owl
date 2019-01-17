@@ -54,6 +54,9 @@ import com.b2international.snowowl.snomed.ecl.ecl.RefinedExpressionConstraint;
 import com.b2international.snowowl.snomed.ecl.ecl.Script;
 import com.b2international.snowowl.snomed.ecl.ecl.StringValueEquals;
 import com.b2international.snowowl.snomed.ecl.ecl.StringValueNotEquals;
+import com.b2international.snowowl.snomed.ecl.ecl.TermConstraint;
+import com.b2international.snowowl.snomed.ecl.ecl.TermEquals;
+import com.b2international.snowowl.snomed.ecl.ecl.TermNotEquals;
 import com.b2international.snowowl.snomed.ecl.services.EclGrammarAccess;
 import com.google.inject.Inject;
 import java.util.Set;
@@ -239,6 +242,15 @@ public class EclSemanticSequencer extends AbstractDelegatingSemanticSequencer {
 				return; 
 			case EclPackage.STRING_VALUE_NOT_EQUALS:
 				sequence_StringValueNotEquals(context, (StringValueNotEquals) semanticObject); 
+				return; 
+			case EclPackage.TERM_CONSTRAINT:
+				sequence_TermConstraint(context, (TermConstraint) semanticObject); 
+				return; 
+			case EclPackage.TERM_EQUALS:
+				sequence_TermEquals(context, (TermEquals) semanticObject); 
+				return; 
+			case EclPackage.TERM_NOT_EQUALS:
+				sequence_TermNotEquals(context, (TermNotEquals) semanticObject); 
 				return; 
 			}
 		if (errorAcceptor != null)
@@ -1199,6 +1211,76 @@ public class EclSemanticSequencer extends AbstractDelegatingSemanticSequencer {
 		}
 		SequenceFeeder feeder = createSequencerFeeder(context, semanticObject);
 		feeder.accept(grammarAccess.getStringValueNotEqualsAccess().getValueSTRINGTerminalRuleCall_1_0(), semanticObject.getValue());
+		feeder.finish();
+	}
+	
+	
+	/**
+	 * Contexts:
+	 *     Refinement returns TermConstraint
+	 *     OrRefinement returns TermConstraint
+	 *     OrRefinement.OrRefinement_1_0_0 returns TermConstraint
+	 *     AndRefinement returns TermConstraint
+	 *     AndRefinement.AndRefinement_1_0_0 returns TermConstraint
+	 *     SubRefinement returns TermConstraint
+	 *     AttributeSet returns TermConstraint
+	 *     OrAttributeSet returns TermConstraint
+	 *     OrAttributeSet.OrRefinement_1_0 returns TermConstraint
+	 *     AndAttributeSet returns TermConstraint
+	 *     AndAttributeSet.AndRefinement_1_0 returns TermConstraint
+	 *     SubAttributeSet returns TermConstraint
+	 *     TermConstraint returns TermConstraint
+	 *
+	 * Constraint:
+	 *     comparison=TermComparison
+	 */
+	protected void sequence_TermConstraint(ISerializationContext context, TermConstraint semanticObject) {
+		if (errorAcceptor != null) {
+			if (transientValues.isValueTransient(semanticObject, EclPackage.Literals.TERM_CONSTRAINT__COMPARISON) == ValueTransient.YES)
+				errorAcceptor.accept(diagnosticProvider.createFeatureValueMissing(semanticObject, EclPackage.Literals.TERM_CONSTRAINT__COMPARISON));
+		}
+		SequenceFeeder feeder = createSequencerFeeder(context, semanticObject);
+		feeder.accept(grammarAccess.getTermConstraintAccess().getComparisonTermComparisonParserRuleCall_1_0(), semanticObject.getComparison());
+		feeder.finish();
+	}
+	
+	
+	/**
+	 * Contexts:
+	 *     Comparison returns TermEquals
+	 *     TermComparison returns TermEquals
+	 *     TermEquals returns TermEquals
+	 *
+	 * Constraint:
+	 *     term=STRING
+	 */
+	protected void sequence_TermEquals(ISerializationContext context, TermEquals semanticObject) {
+		if (errorAcceptor != null) {
+			if (transientValues.isValueTransient(semanticObject, EclPackage.Literals.TERM_COMPARISON__TERM) == ValueTransient.YES)
+				errorAcceptor.accept(diagnosticProvider.createFeatureValueMissing(semanticObject, EclPackage.Literals.TERM_COMPARISON__TERM));
+		}
+		SequenceFeeder feeder = createSequencerFeeder(context, semanticObject);
+		feeder.accept(grammarAccess.getTermEqualsAccess().getTermSTRINGTerminalRuleCall_1_0(), semanticObject.getTerm());
+		feeder.finish();
+	}
+	
+	
+	/**
+	 * Contexts:
+	 *     Comparison returns TermNotEquals
+	 *     TermComparison returns TermNotEquals
+	 *     TermNotEquals returns TermNotEquals
+	 *
+	 * Constraint:
+	 *     term=STRING
+	 */
+	protected void sequence_TermNotEquals(ISerializationContext context, TermNotEquals semanticObject) {
+		if (errorAcceptor != null) {
+			if (transientValues.isValueTransient(semanticObject, EclPackage.Literals.TERM_COMPARISON__TERM) == ValueTransient.YES)
+				errorAcceptor.accept(diagnosticProvider.createFeatureValueMissing(semanticObject, EclPackage.Literals.TERM_COMPARISON__TERM));
+		}
+		SequenceFeeder feeder = createSequencerFeeder(context, semanticObject);
+		feeder.accept(grammarAccess.getTermNotEqualsAccess().getTermSTRINGTerminalRuleCall_1_0(), semanticObject.getTerm());
 		feeder.finish();
 	}
 	
