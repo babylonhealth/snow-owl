@@ -5,10 +5,10 @@ workflows:
     jobs:
       - deploy:
           context: babylon
-#          filters:
-#            branches:
-#              only:
-#                - 7.x
+          filters:
+            branches:
+              only:
+                - 7.x
 env: &env
   working_directory: ~/project
   resource_class: large
@@ -54,7 +54,5 @@ jobs:
           command: |
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
-            echo $JAVA_HOME
-            echo $PATH
-            ./mvnw -s .circleci/settings.xml deploy -DskipTests -Dtycho.localArtifacts="${LOCAL_ARTIFACTS}"
+            ./mvnw -s .circleci/settings.xml deploy -DskipTests -Dtycho.localArtifacts=$LOCAL_ARTIFACTS
 
