@@ -9,7 +9,7 @@ SNOWOWL_RPM_PACKAGE=$(shell find ./releng/com.b2international.snowowl.server.upd
 
 # Please see README for memory configuration
 build:
-	mvn clean verify -DskipTests
+	./mvnw clean verify -DskipTests
 	cp $(SNOWOWL_RPM_PACKAGE)  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
 	docker build ./docker \
 	--build-arg SNOWOWL_RPM_PACKAGE=`basename "${SNOWOWL_RPM_PACKAGE}"` \
