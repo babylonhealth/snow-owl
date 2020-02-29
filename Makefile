@@ -10,6 +10,7 @@ build:
 	./mvnw clean verify -DskipTests
 	ls .
 	export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
+	echo "${SNOWOWL_RPM_PACKAGE}"
 	cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
 	docker build ./docker \
 	--build-arg SNOWOWL_RPM_PACKAGE=`basename "${SNOWOWL_RPM_PACKAGE}"` \
