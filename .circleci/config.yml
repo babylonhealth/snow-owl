@@ -95,6 +95,10 @@ jobs:
           command: |
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
-            make build
+            make build-project
+            export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
+            echo $(SNOWOWL_RPM_PACKAGE)
+            cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
+            make build-docker
 
 

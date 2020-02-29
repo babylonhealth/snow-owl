@@ -6,11 +6,11 @@ DEPLOY_DEV_URL=http://dev-ai-deploy.babylontech.co.uk:5199/job/kube-deploy-dev/b
 DEPLOY_STAGING_URL=http://dev-ai-deploy.babylontech.co.uk:5199/job/kube-deploy-staging/buildWithParameters
 SNOWOWL_RPM_PACKAGE=$(shell find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm")
 
-# Please see README for memory configuration
-build:
+
+build-project:
 	./mvnw clean verify -DskipTests
-	echo $(SNOWOWL_RPM_PACKAGE)
-	cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
+
+build-docker:
 	docker build ./docker \
 	--build-arg SNOWOWL_RPM_PACKAGE=`basename "${SNOWOWL_RPM_PACKAGE}"` \
 	--build-arg BUILD_TIMESTAMP=`date +%s` \
