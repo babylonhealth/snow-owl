@@ -17,6 +17,7 @@ build-docker:
 	--build-arg VERSION="${RELEASE_VERSION}" \
 	--build-arg GIT_REVISION="${GIT_VERSION}" \
 	-t $(REPO)/$(NAME):$(RELEASE_VERSION)
+	docker push $(REPO)/$(NAME):$(RELEASE_VERSION)
 
 run:
 	docker run --rm --name snowowlTest \
