@@ -9,7 +9,7 @@ DEPLOY_STAGING_URL=http://dev-ai-deploy.babylontech.co.uk:5199/job/kube-deploy-s
 build:
 	./mvnw clean verify -DskipTests
 	ls .
-	export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm")`
+	export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
 	cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
 	docker build ./docker \
 	--build-arg SNOWOWL_RPM_PACKAGE=`basename "${SNOWOWL_RPM_PACKAGE}"` \
