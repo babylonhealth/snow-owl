@@ -4,12 +4,11 @@ SEMVER_VERSION=$(shell git describe --abbrev=0 --tags)
 REPO=quay.io/babylonhealth
 DEPLOY_DEV_URL=http://dev-ai-deploy.babylontech.co.uk:5199/job/kube-deploy-dev/buildWithParameters
 DEPLOY_STAGING_URL=http://dev-ai-deploy.babylontech.co.uk:5199/job/kube-deploy-staging/buildWithParameters
+SNOWOWL_RPM_PACKAGE=$(find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm")
 
 # Please see README for memory configuration
 build:
 	./mvnw clean verify -DskipTests
-	ls ./releng/com.b2international.snowowl.server.update/target
-	export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
 	echo "${SNOWOWL_RPM_PACKAGE}"
 	cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
 	docker build ./docker \

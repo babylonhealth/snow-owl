@@ -94,6 +94,7 @@ jobs:
           name: Build and push docker image
           command: |
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
+            export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
             source $BASH_ENV
             make build
 
