@@ -8,7 +8,7 @@ SNOWOWL_RPM_PACKAGE=$(shell find ./releng/com.b2international.snowowl.server.upd
 
 
 build-project:
-	./mvnw clean verify -DskipTests
+	./mvnw clean verify -DskipTests -X
 
 build-docker:
 	docker build ./docker \
