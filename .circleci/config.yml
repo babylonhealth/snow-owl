@@ -73,6 +73,8 @@ jobs:
           command: |
             docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" quay.io
             apk add --no-cache make=4.2.1-r0 nodejs openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+            echo 'export PATH=$JAVA_HOME/bin:/bin/bash:$PATH' >> $BASH_ENV
+            source $BASH_ENV
             npm config set unsafe-perm true
             npm install n -g
             n stable
