@@ -19,9 +19,9 @@ workflows:
           context: babylon
           filters:
             branches:
-              ignore: /.*/
+              ignore: /bbl-.*/
             tags:
-              only: /^.*/
+              only: /^bbl-.*/
 env: &env
   working_directory: ~/project
   resource_class: large
@@ -123,7 +123,6 @@ jobs:
       - deploy:
           name: Staging Deploy
           command: |
-            git branch --remotes --contains HEAD | grep  "^\s*origin/master$" > /dev/null
             make deploy-staging
 
 
