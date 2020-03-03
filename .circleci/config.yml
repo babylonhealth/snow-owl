@@ -19,7 +19,7 @@ workflows:
           context: babylon
           filters:
             branches:
-              ignore: /^bbl-.*/
+              ignore: /.*/
             tags:
               only: /bbl-.*/
 env: &env
