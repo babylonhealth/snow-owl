@@ -118,8 +118,7 @@ jobs:
           name: Build prerequisites
           command: |
             docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" quay.io
-            apk add --no-cache make=4.2.1-r0 openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
-            make download-deps
+            apk add --no-cache make=4.2.1-r2 nodejs npm openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
       - deploy:
           name: Staging Deploy
           command: |
