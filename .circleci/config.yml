@@ -13,7 +13,7 @@ workflows:
           context: babylon
           filters:
             branches:
-              ignore:
+              only:
                 - 7.x
       - deploy-service-staging:
           context: babylon
