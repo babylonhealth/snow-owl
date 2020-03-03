@@ -42,7 +42,7 @@ jobs:
           name: Build prerequisites
           command: |
             docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" quay.io
-            apk add --no-cache make=4.2.1-r0 nodejs npm openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+            apk add --no-cache make=4.2.1-r2 nodejs npm openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
             npm config set unsafe-perm true
             npm install -g npm
       - save_cache:
@@ -72,7 +72,7 @@ jobs:
           name: Build prerequisites
           command: |
             docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" quay.io
-            apk add --no-cache make=4.2.1-r2 nodejs openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+            apk add --no-cache make=4.2.1-r2 nodejs npm openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
             npm config set unsafe-perm true
             npm install -g npm
       - save_cache:
