@@ -3,13 +3,19 @@ workflows:
   version: 2
   flow:
     jobs:
-      - deploy-libraries:
+      - release-libraries:
           context: babylon
           filters:
             branches:
               only:
                 - 7.x
-      - deploy-docker:
+      - deploy-service-dev:
+          context: babylon
+          filters:
+            branches:
+              only:
+                - 7.x
+      - deploy-service-staging:
           context: babylon
           filters:
             branches:
@@ -27,7 +33,7 @@ env: &env
     JAVA_HOME: /usr/lib/jvm/java-11-openjdk
 
 jobs:
-  deploy-libraries:
+  release-libraries:
     <<: *env
     steps:
       - checkout
@@ -57,7 +63,7 @@ jobs:
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
             source $BASH_ENV
             ./mvnw -s .circleci/settings.xml deploy -DskipTests -Dtycho.localArtifacts=$LOCAL_ARTIFACTS
-  deploy-docker:
+  deploy-service-dev:
     <<: *env
     steps:
       - checkout
@@ -89,7 +95,37 @@ jobs:
             make build-project
             export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
             cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
+            export RELEASE_VERSION=`git describe --abbrev=0 --tags`
             make build-docker
             make push
+      - deploy:
+          name: Deploy dev
+          command: make deploy-dev
+  deploy-service-staging:
+    <<: *env
+    steps:
+      - checkout
+      - setup_remote_docker
+      - restore_cache:
+          keys:
+            - snow-owl-mvn-cache-{{ checksum "pom.xml" }}
+            - snow-owl-mvn-cache-
+          paths:
+            - "~/.gradle"
+            - "~/.m2"
+            - "/root/.gradle"
+      - run:
+          name: Build prerequisites
+          command: |
+            docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" quay.io
+            apk add --no-cache make=4.2.1-r0 openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
+            make download-deps
+      - deploy:
+          name: Staging Deploy
+          command: |
+            git branch --remotes --contains HEAD | grep  "^\s*origin/master$" > /dev/null
+            make deploy-staging
+
+
 
 
