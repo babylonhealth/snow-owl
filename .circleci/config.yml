@@ -13,8 +13,9 @@ workflows:
           context: babylon
           filters:
             branches:
-              ignore:
-                - 7.x
+              ignore: /.*/
+            tags:
+              only: /^.*/
 env: &env
   working_directory: ~/project
   resource_class: large
@@ -89,5 +90,6 @@ jobs:
             export SNOWOWL_RPM_PACKAGE=`find ./releng/com.b2international.snowowl.server.update/target -name "snow-owl-oss*.rpm"`
             cp "${SNOWOWL_RPM_PACKAGE}"  ./docker/`basename "${SNOWOWL_RPM_PACKAGE}"`
             make build-docker
+            make push
 
 

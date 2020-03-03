@@ -17,21 +17,22 @@ build-docker:
 	--build-arg VERSION="${RELEASE_VERSION}" \
 	--build-arg GIT_REVISION="${GIT_VERSION}" \
 	-t $(REPO)/$(NAME):$(RELEASE_VERSION)
+
+push:
 	docker push $(REPO)/$(NAME):$(RELEASE_VERSION)
 
+pull:
+	docker pull $(REPO)/$(NAME):$(RELEASE_VERSION)
+
 run:
-	docker run --rm --name snowowlTest \
-    --cpus="4" \
-    -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+	docker run --rm --name $(NAME) \
+    --cpus="3" \
+    --cpuset-cpus="3" \
     -d \
     -e ELASTICSEARCH_CLUSTER_URL="${ELASTICSEARCH_CLUSTER_URL}" \
     -e ELASTICSEARCH_CONNECT_TIMEOUT="${ELASTICSEARCH_CONNECT_TIMEOUT}" \
     -e ELASTICSEARCH_SOCKET_TIMEOUT="${ELASTICSEARCH_SOCKET_TIMEOUT}" \
-    -p 28082:8080 $(REPO)/$(NAME):$(RELEASE_VERSION)
-
-tag-develop:
-	docker tag  $(REPO)/$(NAME):$(RELEASE_VERSION) $(REPO)/$(NAME):develop
-	docker push $(REPO)/$(NAME):develop
+    -p 8080:8080 $(REPO)/$(NAME):$(RELEASE_VERSION)
 
 tag-semver:
 	@if docker run --rm -e DOCKER_REPO=babylonhealth/$(NAME) -e DOCKER_TAG=$(SEMVER_VERSION) quay.io/babylonhealth/tag-exists; then \
@@ -43,17 +44,10 @@ tag-semver:
 		docker push $(REPO)/$(NAME):master; \
 	fi
 
-pull:
-	docker pull $(REPO)/$(NAME):$(RELEASE_VERSION)
-
-install: build
-	docker push $(REPO)/$(NAME):$(RELEASE_VERSION)
-
 deploy-dev:
 	@curl -vvv -XPOST "${DEPLOY_DEV_URL}?token=${JENKINS_DEV_TOKEN}&APP=chr-terminology-server&VERSION=${RELEASE_VERSION}"
 
 deploy-staging:
-	docker --version
 	docker login -u "${DOCKER_USER}" -p "${DOCKER_PASS}" quay.io
 	make pull
 	make tag-semver
