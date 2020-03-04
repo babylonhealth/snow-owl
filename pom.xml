@@ -12,7 +12,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-		
+
 		<!-- Maven Dependency Versions -->
 		<jackson.version>2.9.10</jackson.version>
 		<jackson.databind.version>2.9.10.3</jackson.databind.version>
@@ -537,13 +537,13 @@
 			<groupId>it.unimi.dsi</groupId>
 			<artifactId>fastutil</artifactId>
 			<version>${fastutil.version}</version>
-			<scope>provided</scope>	
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 	   		<groupId>javax.activation</groupId>
 	    	<artifactId>javax.activation-api</artifactId>
 		    <version>1.2.0</version>
-		    <scope>provided</scope>	
+		    <scope>provided</scope>
 		</dependency>
 		<dependency>
 		  <groupId>javax.xml.bind</groupId>
@@ -555,13 +555,13 @@
 		    <groupId>com.sun.xml.bind</groupId>
 		    <artifactId>jaxb-core</artifactId>
 		    <version>${jaxb.api.version}</version>
-			<scope>provided</scope>	
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 		    <groupId>com.sun.xml.bind</groupId>
 		    <artifactId>jaxb-impl</artifactId>
 		    <version>${jaxb.api.version}</version>
-			<scope>provided</scope>	
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 		    <groupId>com.sun.activation</groupId>
@@ -651,7 +651,7 @@
 							</restrictTo>
 						</filter>
 						<!-- work around Equinox bug 348045 -->
-						<!-- Removes the extension bundle from the available bundles for the 
+						<!-- Removes the extension bundle from the available bundles for the
 							javax.servlet package -->
 						<filter>
             				<type>p2-installable-unit</type>
@@ -751,7 +751,7 @@
 								<version>${jackson.version}</version>
 							</restrictTo>
 						</filter>
-						<!-- Restrict Apache Commons Collections to versions above and including 
+						<!-- Restrict Apache Commons Collections to versions above and including
 							3.2.2 -->
 						<filter>
 							<type>p2-installable-unit</type>
