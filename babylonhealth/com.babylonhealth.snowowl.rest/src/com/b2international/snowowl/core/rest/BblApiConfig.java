@@ -30,7 +30,7 @@ public class BblApiConfig extends BaseApiConfig {
 			"wd", 
 			"wewqe", 
 			"qwe", 
-			"qwe
+			"qwe",
 			"sd"
 		);
 
