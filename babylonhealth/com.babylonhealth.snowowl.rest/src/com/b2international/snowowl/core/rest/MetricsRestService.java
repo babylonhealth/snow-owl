@@ -12,7 +12,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 
 /**
- * @since 7.0
+ * @since 7.5
  */
 @Api(value = "Metrics", tags = { "metrics" })
 @RestController
