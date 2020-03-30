@@ -14,9 +14,9 @@ import io.swagger.annotations.ApiResponses;
 /**
  * @since 7.0
  */
-@Api(value = "Monitoring", tags = { "monitoring" })
+@Api(value = "Metrics", tags = { "metrics" })
 @RestController
-public class MonitoringRestService extends AbstractRestService {
+public class MetricsRestService extends AbstractRestService {
 	
 	@Autowired
 	private MeterRegistry registry;
@@ -27,7 +27,7 @@ public class MonitoringRestService extends AbstractRestService {
 	@ApiResponses({
 		@ApiResponse(code = 200, message = "OK", response = String.class),
 	})
-	@GetMapping(value = "/stats", produces = { AbstractRestService.TEXT_MEDIA_TYPE })
+	@GetMapping(value = "/metrics", produces = { AbstractRestService.TEXT_MEDIA_TYPE })
 	public String getMetrics() {
 		if (registry instanceof PrometheusMeterRegistry) {
 			return ((PrometheusMeterRegistry) registry).scrape();
