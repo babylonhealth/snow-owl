@@ -104,7 +104,7 @@
 		</dependency>
 		<dependency>
 			<groupId>com.b2international.snowowl</groupId>
-			<artifactId>com.babylonhealth.snowowl.core.rest</artifactId>
+			<artifactId>com.babylonhealth.snowowl.rest</artifactId>
 			<version>${project.version}</version>
 			<scope>compile</scope>
 		</dependency>
