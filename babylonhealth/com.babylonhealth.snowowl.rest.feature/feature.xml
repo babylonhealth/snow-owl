@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.babylonhealth.snowowl.core.rest.feature"
-      label="Snow Owl FHIR API Feature"
-      version="7.5.0.qualifier"
-      provider-name="Babylonhealth">
+      id="com.babylonhealth.snowowl.rest.feature"
+      label="Feature"
+      version="1.0.0.qualifier"
+      provider-name="BABYLONHEALTH">
 
    <description url="http://www.example.com/description">
       [Enter Feature Description here.]
@@ -18,7 +18,7 @@
    </license>
 
    <plugin
-         id="com.babylonhealth.snowowl.core.rest"
+         id="com.babylonhealth.snowowl.rest"
          download-size="0"
          install-size="0"
          version="0.0.0"
