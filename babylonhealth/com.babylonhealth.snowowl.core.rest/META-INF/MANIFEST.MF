@@ -1,10 +1,9 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Babylonhealth custom REST API
-Bundle-SymbolicName: com.b2international.snowowl.core2.rest
+Bundle-SymbolicName: com.babylonhealth.snowowl.core.rest
 Bundle-Version: 7.5.0.qualifier
 Bundle-Vendor: BabylonHealth
 Fragment-Host: com.b2international.snowowl.core.rest
-Automatic-Module-Name: com.b2international.snowowl.core2.rest
+Automatic-Module-Name: com.babylonhealth.snowowl.core.rest
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: com.b2international.snowowl.core

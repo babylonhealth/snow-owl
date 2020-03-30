@@ -1,4 +1,4 @@
-package com.b2international.snowowl.core.rest;
+package com.babylonhealth.snowowl.core.rest;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

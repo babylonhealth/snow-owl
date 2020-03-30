@@ -8,7 +8,7 @@
 		<version>7.5.0-SNAPSHOT</version>
 	</parent>
 
-    <artifactId>com.b2international.snowowl.core2.rest</artifactId>
+    <artifactId>com.babylonhealth.snowowl.core.rest</artifactId>
     <packaging>eclipse-plugin</packaging>
 
 	<dependencies>

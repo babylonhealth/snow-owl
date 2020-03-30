@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.b2international.snowowl.core2.rest.feature"
+      id="com.babylonhealth.snowowl.core.rest.feature"
       label="Snow Owl FHIR API Feature"
       version="7.5.0.qualifier"
       provider-name="Babylonhealth">
@@ -18,7 +18,7 @@
    </license>
 
    <plugin
-         id="com.b2international.snowowl.core2.rest"
+         id="com.babylonhealth.snowowl.core.rest"
          download-size="0"
          install-size="0"
          version="0.0.0"
