@@ -1,7 +1,8 @@
-package com.babylonhealth.snowowl.core.rest;
+package com.b2international.snowowl.core.rest;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.ComponentScan;
 
 import springfox.documentation.spring.web.plugins.Docket;
 
@@ -9,6 +10,7 @@ import springfox.documentation.spring.web.plugins.Docket;
  * @since 7.5
  */
 @Configuration
+@ComponentScan("com.babylonhealth.snowowl.core.rest")
 public class BabylonhealthApiConfig extends BaseApiConfig {
 
 	@Override

@@ -1,4 +1,4 @@
-package com.babylonhealth.snowowl.core.rest;
+package com.b2international.snowowl.core.rest;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.prometheus.PrometheusMeterRegistry;

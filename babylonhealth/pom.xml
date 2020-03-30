@@ -13,8 +13,10 @@
 	</parent>
 	
 	<modules>
+
 		<module>com.babylonhealth.snowowl.core.rest</module>
 		<module>com.babylonhealth.snowowl.core.rest.feature</module>
+
 	</modules>
 	
 </project>
