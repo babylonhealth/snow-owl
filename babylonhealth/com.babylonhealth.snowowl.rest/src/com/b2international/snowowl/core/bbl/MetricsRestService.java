@@ -1,6 +1,9 @@
 package com.b2international.snowowl.core.bbl;
 
+import com.b2international.snowowl.core.rest.AbstractRestService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
