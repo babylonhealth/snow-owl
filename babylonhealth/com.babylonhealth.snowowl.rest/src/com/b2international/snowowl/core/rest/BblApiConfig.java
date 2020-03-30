@@ -8,7 +8,7 @@ import springfox.documentation.spring.web.plugins.Docket;
 
 
 @Configuration
-@ComponentScan("com.b2international.snowowl.rest")
+@ComponentScan("com.b2international.snowowl.core.bbl")
 public class BblApiConfig extends BaseApiConfig {
 
 	@Override

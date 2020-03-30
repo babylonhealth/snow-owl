@@ -1,4 +1,4 @@
-package com.b2international.snowowl.core.rest;
+package com.b2international.snowowl.core.bbl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
