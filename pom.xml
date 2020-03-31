@@ -62,17 +62,18 @@
 		<nexus.snapshots.url>${nexus.url}/content/repositories/snapshots</nexus.snapshots.url>
 	</properties>
 
-    <modules>
-        <module>commons</module>
-        <module>core</module>
-        <module>fhir</module>
-        <module>net4j</module>
-        <module>snomed</module>
-        <module>cis</module>
-        <module>tests</module>
-        <module>releng</module>
-        <module>dist</module>
-    </modules>
+	<modules>
+		<module>commons</module>
+		<module>core</module>
+		<module>babylonhealth</module>
+		<module>fhir</module>
+		<module>net4j</module>
+		<module>snomed</module>
+		<module>cis</module>
+		<module>tests</module>
+		<module>releng</module>
+		<module>dist</module>
+	</modules>
 
 	<repositories>
 		<repository>
