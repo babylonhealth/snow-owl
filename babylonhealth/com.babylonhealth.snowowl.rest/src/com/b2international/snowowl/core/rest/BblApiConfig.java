@@ -13,7 +13,7 @@ public class BblApiConfig extends BaseApiConfig {
 
 	@Override
 	public String getApiBaseUrl() {
-		return "/bbl";
+		return "/";
 	}
 
 	@Bean
@@ -23,11 +23,11 @@ public class BblApiConfig extends BaseApiConfig {
 			"bbl", 
 			"1.0", 
 			"BBl API", 
-			"wd", 
-			"wewqe", 
-			"qwe", 
-			"qwe",
-			"sd"
+			"", 
+			"", 
+			"", 
+			"",
+			"API added by Babylon Health"
 		);
 
 	}	
