@@ -18,6 +18,19 @@ package com.b2international.snowowl.snomed.etl.etl;
 
 /**
  * <!-- begin-user-doc -->
+<<<<<<< HEAD:snomed/com.b2international.snowowl.snomed.etl/src-gen/com/b2international/snowowl/snomed/etl/etl/ExpressionReplacementSlot.java
+ * A representation of the model object '<em><b>Expression Replacement Slot</b></em>'.
+ * <!-- end-user-doc -->
+ *
+ *
+ * @see com.b2international.snowowl.snomed.etl.etl.EtlPackage#getExpressionReplacementSlot()
+ * @model
+ * @generated
+ */
+public interface ExpressionReplacementSlot extends ConceptReplacementSlot
+{
+} // ExpressionReplacementSlot
+=======
  * A representation of the model object '<em><b>Concept Id Replacement Slot</b></em>'.
  * <!-- end-user-doc -->
  *
@@ -29,3 +42,4 @@ package com.b2international.snowowl.snomed.etl.etl;
 public interface ConceptIdReplacementSlot extends ConceptReplacementSlot
 {
 } // ConceptIdReplacementSlot
+>>>>>>> 7db5e0410dff4ff7a674a8fba16fc828e6991e07:snomed/com.b2international.snowowl.snomed.etl/src-gen/com/b2international/snowowl/snomed/etl/etl/ConceptIdReplacementSlot.java
