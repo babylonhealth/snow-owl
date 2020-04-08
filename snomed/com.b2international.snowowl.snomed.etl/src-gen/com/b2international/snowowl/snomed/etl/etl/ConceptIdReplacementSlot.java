@@ -18,14 +18,14 @@ package com.b2international.snowowl.snomed.etl.etl;
 
 /**
  * <!-- begin-user-doc -->
- * A representation of the model object '<em><b>Expression Replacement Slot</b></em>'.
+ * A representation of the model object '<em><b>Concept Id Replacement Slot</b></em>'.
  * <!-- end-user-doc -->
  *
  *
- * @see com.b2international.snowowl.snomed.etl.etl.EtlPackage#getExpressionReplacementSlot()
+ * @see com.b2international.snowowl.snomed.etl.etl.EtlPackage#getConceptIdReplacementSlot()
  * @model
  * @generated
  */
-public interface ExpressionReplacementSlot extends ConceptReplacementSlot
+public interface ConceptIdReplacementSlot extends ConceptReplacementSlot
 {
-} // ExpressionReplacementSlot
+} // ConceptIdReplacementSlot
