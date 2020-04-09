@@ -63,9 +63,9 @@
 	</properties>
 
 	<modules>
+		<module>babylonhealth</module>
 		<module>commons</module>
 		<module>core</module>
-		<module>babylonhealth</module>
 		<module>fhir</module>
 		<module>net4j</module>
 		<module>snomed</module>
