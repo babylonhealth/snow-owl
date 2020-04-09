@@ -1,4 +1,4 @@
-package com.b2international.snowowl.core.bbl;
+package com.b2international.snowowl.bbl.rest;
 
 import com.b2international.snowowl.core.rest.AbstractRestService;
 
