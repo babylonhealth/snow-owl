@@ -25,12 +25,12 @@ public class MetricsRestService extends AbstractRestService {
 	private MeterRegistry registry;
 
 	@ApiOperation(
-			value="Retrieve monitoring data about Snow Owl",
-			notes="Retrive monitoring data about Snow Owl which is parsable by a Prometheus monitoring system.")
+			value = "Retrieve monitoring data about Snow Owl",
+			notes = "Retrive monitoring data about Snow Owl which is parsable by a Prometheus monitoring system.")
 	@ApiResponses({
 			@ApiResponse(code = 200, message = "OK", response = String.class),
 	})
-	@GetMapping(value = "/metrics", produces = { AbstractRestService.TEXT_MEDIA_TYPE })
+	@GetMapping(value = "/metrics", produces = {AbstractRestService.TEXT_MEDIA_TYPE})
 	public String getMetrics() {
 		if (registry instanceof PrometheusMeterRegistry) {
 			return ((PrometheusMeterRegistry) registry).scrape();
@@ -38,3 +38,4 @@ public class MetricsRestService extends AbstractRestService {
 			return "";
 		}
 	}
+}
