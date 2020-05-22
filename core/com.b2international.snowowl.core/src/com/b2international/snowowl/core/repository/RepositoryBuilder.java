@@ -141,10 +141,6 @@ public final class RepositoryBuilder {
 			repositoryConfigurers.forEach(configurer -> ((CompositeComponentDeletionPolicy) deletionPolicy).mergeWith(configurer.getComponentDeletionPolicy()));
 		}
 		
-		if (deletionPolicy instanceof CompositeComponentDeletionPolicy) {
-			repositoryConfigurers.forEach(configurer -> ((CompositeComponentDeletionPolicy) deletionPolicy).mergeWith(configurer.getComponentDeletionPolicy()));
-		}
-		
 		final TerminologyRepository repository = new TerminologyRepository(repositoryId, mergeMaxResults, env, mappings, log);
 		// attach all custom bindings
 		repository.bindAll(bindings);
