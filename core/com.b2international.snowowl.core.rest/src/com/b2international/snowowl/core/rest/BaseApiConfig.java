@@ -144,7 +144,8 @@ public abstract class BaseApiConfig {
 									if(apiBaseUrl != null && apiBaseUrl.equals("/")) {
 										return input != null && input.startsWith("//");
 									}
-									return paths.apply(input);)
+									return paths.apply(input);
+	            	})
 	            	.build()
 	            .apiInfo(new ApiInfo(apiTitle, apiDescription, apiVersion, apiTermsOfServiceUrl, new Contact("B2i Healthcare", apiLicenseUrl, apiContact), apiLicense, apiLicenseUrl, Collections.emptyList()));
 	}
