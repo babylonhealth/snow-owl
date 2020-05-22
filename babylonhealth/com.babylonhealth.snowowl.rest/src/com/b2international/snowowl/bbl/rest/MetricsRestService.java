@@ -20,15 +20,15 @@ import io.swagger.annotations.ApiResponses;
 @Api(value = "Metrics", tags = { "metrics" })
 @RestController
 public class MetricsRestService extends AbstractRestService {
-	
+
 	@Autowired
 	private MeterRegistry registry;
-	
+
 	@ApiOperation(
 			value="Retrieve monitoring data about Snow Owl",
 			notes="Retrive monitoring data about Snow Owl which is parsable by a Prometheus monitoring system.")
 	@ApiResponses({
-		@ApiResponse(code = 200, message = "OK", response = String.class),
+			@ApiResponse(code = 200, message = "OK", response = String.class),
 	})
 	@GetMapping(value = "/metrics", produces = { AbstractRestService.TEXT_MEDIA_TYPE })
 	public String getMetrics() {
@@ -38,5 +38,3 @@ public class MetricsRestService extends AbstractRestService {
 			return "";
 		}
 	}
-
-}
