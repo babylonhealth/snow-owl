@@ -14,7 +14,7 @@ workflows:
           filters:
             branches:
               only:
-                - 7.x
+                - updateFromB2i
       - deploy-service-staging:
           context: babylon
           filters:
