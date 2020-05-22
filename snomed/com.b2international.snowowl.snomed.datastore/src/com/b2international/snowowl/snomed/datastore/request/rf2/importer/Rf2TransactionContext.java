@@ -93,6 +93,11 @@ public final class Rf2TransactionContext extends DelegatingBranchContext impleme
 	}
 	
 	@Override
+	public boolean isDirty() {
+		return getDelegate().isDirty();
+	}
+	
+	@Override
 	public String author() {
 		return getDelegate().author();
 	}
