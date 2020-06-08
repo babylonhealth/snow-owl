@@ -142,7 +142,12 @@ final class SnomedRf2ImportRequest implements Request<BranchContext, Rf2ImportRe
 					+ "ontology is not available on the terminology server. "
 					+ "Please perform either a full or a snapshot import instead.");
 		}
-//
+
+/*
+	 	 commenting out to permit testing snapshot import of snomed international while MAIN is empty as per
+	 	 https://github.com/b2ihealthcare/snow-owl/issues/514
+ */
+
 //		if (!contentAvailable && !isMain) {
 //			throw new BadRequestException("Importing a release of SNOMED CT from an "
 //					+ "archive to other than MAIN branch is prohibited when SNOMED CT "
