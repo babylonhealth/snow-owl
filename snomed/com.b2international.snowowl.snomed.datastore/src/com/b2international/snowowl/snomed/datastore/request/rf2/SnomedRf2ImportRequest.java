@@ -142,13 +142,13 @@ final class SnomedRf2ImportRequest implements Request<BranchContext, Rf2ImportRe
 					+ "ontology is not available on the terminology server. "
 					+ "Please perform either a full or a snapshot import instead.");
 		}
-		
-		if (!contentAvailable && !isMain) {
-			throw new BadRequestException("Importing a release of SNOMED CT from an "
-					+ "archive to other than MAIN branch is prohibited when SNOMED CT "
-					+ "ontology is not available on the terminology server. "
-					+ "Please perform a full import to MAIN branch first.");
-		}
+//
+//		if (!contentAvailable && !isMain) {
+//			throw new BadRequestException("Importing a release of SNOMED CT from an "
+//					+ "archive to other than MAIN branch is prohibited when SNOMED CT "
+//					+ "ontology is not available on the terminology server. "
+//					+ "Please perform a full import to MAIN branch first.");
+//		}
 	}
 
 	Rf2ImportResponse doImport(final BranchContext context, final File rf2Archive, final Rf2ImportConfiguration importconfig) throws Exception {
