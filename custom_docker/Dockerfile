@@ -1,4 +1,4 @@
-FROM b2ihealthcare/snow-owl-oss:7.x
+FROM b2ihealthcare/snow-owl-oss:7.7.0
 
 # define arguments accepted at build
 ARG SNOWOWL_USERNAME
@@ -19,5 +19,3 @@ RUN echo "  index:" >>  /usr/share/snowowl/configuration/snowowl.yml
 RUN echo "    clusterUrl: ${ELASTICSEARCH_CLUSTER_URL}" >>  /usr/share/snowowl/configuration/snowowl.yml
 RUN echo "    connectTimeout: ${ELASTICSEARCH_CONNECT_TIMEOUT}" >>  /usr/share/snowowl/configuration/snowowl.yml
 RUN echo "    socketTimeout: ${ELASTICSEARCH_SOCKET_TIMEOUT}" >>  /usr/share/snowowl/configuration/snowowl.yml
-
-EXPOSE 2036 8080
