@@ -9,7 +9,7 @@ ARG ELASTICSEARCH_CONNECT_TIMEOUT
 ARG ELASTICSEARCH_SOCKET_TIMEOUT
 
 # set the user and password
-RUN echo "${SNOWOWL_USERNAME}:${SNOWOWL_PASSWORD}" >> /usr/share/snowowl/configuration/users
+RUN echo "${SNOWOWL_USERNAME}:${SNOWOWL_PASSWORD}" > /usr/share/snowowl/configuration/users
 
 # prepare and copy over the snowowl.yml file
 COPY --chown=snowowl:snowowl snowowl.yml /usr/share/snowowl/configuration/
