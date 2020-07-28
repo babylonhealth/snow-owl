@@ -8,11 +8,6 @@ DEPLOY_STAGING_URL=http://dev-ai-deploy.babylontech.co.uk:5199/job/kube-deploy-s
 
 build-docker:
 	docker build ./custom_docker \
-	--build-arg ELASTICSEARCH_CLUSTER_URL="${ELASTICSEARCH_CLUSTER_URL}" \
-	--build-arg ELASTICSEARCH_SOCKET_TIMEOUT="${ELASTICSEARCH_SOCKET_TIMEOUT}" \
-	--build-arg ELASTICSEARCH_CONNECT_TIMEOUT="${ELASTICSEARCH_CONNECT_TIMEOUT}" \
-	--build-arg SNOWOWL_USERNAME="${SNOWOWL_USERNAME}" \
-	--build-arg SNOWOWL_PASSWORD="${SNOWOWL_PASSWORD}" \
 	-t $(REPO)/$(NAME):$(RELEASE_VERSION)
 
 push:
