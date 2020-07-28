@@ -31,3 +31,9 @@ snomed:
 
 monitoring:
   enabled: true
+
+repository:
+  index:
+    clusterUrl: "${ELASTICSEARCH_CLUSTER_URL}"
+    connectTimeout: "${ELASTICSEARCH_CONNECT_TIMEOUT}"
+    socketTimeout: "${ELASTICSEARCH_SOCKET_TIMEOUT}"
