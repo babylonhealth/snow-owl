@@ -2,7 +2,7 @@ FROM b2ihealthcare/snow-owl-oss:7.7.0
 
 # change the config path
 ENV SO_PATH_CONF="/opt/snowowl/bbl/config"
-RUN mv configuration/* $SO_PATH_CONF/
+COPY --chown=snowowl:snowowl configuration/* $SO_PATH_CONF/
 
 # define envs
 ARG ELASTICSEARCH_CLUSTER_URL
