@@ -12,7 +12,7 @@ ARG ELASTICSEARCH_SOCKET_TIMEOUT
 ENV ELASTICSEARCH_SOCKET_TIMEOUT $ELASTICSEARCH_SOCKET_TIMEOUT
 
 # prepare and copy over the snowowl.yml file
-COPY --chown=snowowl:snowowl snowowl.yml /opt/snowowl/bbl/config
+COPY --chown=snowowl:snowowl snowowl.yml /opt/snowowl/bbl/config/
 
 RUN echo "repository:" >> /opt/snowowl/bbl/config/snowowl.yml
 RUN echo "  index:" >> /opt/snowowl/bbl/config/snowowl.yml
