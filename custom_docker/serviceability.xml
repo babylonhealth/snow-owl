@@ -2,7 +2,7 @@
 
 	<!-- Generic console log. -->
 	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-	    <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
 				<marker>SNOW_OWL</marker>
 			</evaluator>
@@ -10,7 +10,7 @@
 			<onMismatch>NEUTRAL</onMismatch>
 			<onMatch>DENY</onMatch>
 		</filter>
-	    <filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
 				<marker>SNOW_OWL_USER_ACCESS</marker>
 			</evaluator>
@@ -18,14 +18,14 @@
 			<onMismatch>NEUTRAL</onMismatch>
 			<onMatch>DENY</onMatch>
 		</filter>
-	    <encoder>
-	      <pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg" }</pattern>
-	    </encoder>
-	  </appender>
+		<encoder>
+			<pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] %-5level %logger{35} - %msg %n</pattern>
+		</encoder>
+	</appender>
 
 	<!--  Appender for user activity to be logged on the console -->
 	<appender name="STDOUT_USER_ACTIVITY" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
+		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
 			by default -->
 		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
@@ -35,13 +35,13 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "logger_name": "%logger",  "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}", "branch": "%X{BRANCH}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Branch: %X{BRANCH} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<!--  Appender for user access to be logged on the console -->
 	<appender name="STDOUT_USER_ACCESS" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
+		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
 			by default -->
 		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
@@ -51,13 +51,13 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<!--  Appender for import to be logged on the console -->
 	<appender name="STDOUT_IMPORT_ACTIVITY" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
+		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
 			by default -->
 		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
@@ -67,13 +67,13 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<!--  Appender for export to be logged on the console -->
 	<appender name="STDOUT_EXPORT_ACTIVITY" class="ch.qos.logback.core.ConsoleAppender">
-		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder 
+		<!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
 			by default -->
 		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
@@ -83,7 +83,7 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
 
@@ -108,11 +108,11 @@
 			<onMatch>ACCEPT</onMatch>
 
 		</filter>
-		<encoder>
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}", "branch": "%X{BRANCH}" }</Pattern>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Branch: %X{BRANCH} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<!--  Appender for user access to be logged in a file -->
 	<appender name="SNOWOWL_ACCESS_LOG_FILE"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -135,10 +135,10 @@
 
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<!--  Appender for import to be logged in a file -->
 	<appender name="SNOWOWL_IMPORT_ACTIVITY"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -161,10 +161,10 @@
 
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<!--  Appender for import to be logged in a file -->
 	<appender name="SNOWOWL_EXPORT_ACTIVITY"
 		class="ch.qos.logback.core.rolling.RollingFileAppender">
@@ -187,7 +187,7 @@
 
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
 
@@ -196,7 +196,7 @@
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<fileNamePattern>serviceability/logs/log_%d{yyyy-MM-dd}.log</fileNamePattern>
 			<!-- keep 90 days' worth of history -->
-      		<maxHistory>90</maxHistory>
+			<maxHistory>90</maxHistory>
 		</rollingPolicy>
 		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
 			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
@@ -206,7 +206,7 @@
 			<onMatch>DENY</onMatch>
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}", "logger": "%logger" }</Pattern>
+			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] %-5level %-28.28thread %-64.64logger{64} %msg %ex%n</Pattern>
 		</encoder>
 	</appender>
 
