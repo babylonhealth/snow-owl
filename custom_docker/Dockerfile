@@ -6,7 +6,7 @@ ENV SO_PATH_CONF="/opt/snowowl/bbl/config"
 COPY --chown=snowowl:snowowl snowowl.yml /opt/snowowl/bbl/config/
 RUN mv /usr/share/snowowl/configuration/* $SO_PATH_CONF/
 
-#babylon hack since SO_PATH_CONF doesn't seem to be taken into account
+# babylon hack since SO_PATH_CONF doesn't seem to be taken into account
 RUN rm -rf /usr/share/snowowl/configuration  && \
 ln -s $SO_PATH_CONF /usr/share/snowowl/configuration
 
@@ -15,11 +15,8 @@ RUN ln -s $SO_PATH_CONF /etc/snowowl && \
     ln -s /usr/share/snowowl/serviceability /var/log/snowowl
 
 # define envs
-ARG ELASTICSEARCH_CLUSTER_URL
 ENV ELASTICSEARCH_CLUSTER_URL $ELASTICSEARCH_CLUSTER_URL
-ARG ELASTICSEARCH_CONNECT_TIMEOUT
 ENV ELASTICSEARCH_CONNECT_TIMEOUT $ELASTICSEARCH_CONNECT_TIMEOUT
-ARG ELASTICSEARCH_SOCKET_TIMEOUT
 ENV ELASTICSEARCH_SOCKET_TIMEOUT $ELASTICSEARCH_SOCKET_TIMEOUT
 
 # prepare and copy over the snowowl.yml file
