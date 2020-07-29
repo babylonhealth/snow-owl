@@ -19,7 +19,7 @@
 			<onMatch>DENY</onMatch>
 		</filter>
 	    <encoder>
-	      <pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%thread] %-5level %logger{35} - %msg %n</pattern>
+	      <pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg" }</pattern>
 	    </encoder>
 	  </appender>
 
@@ -35,7 +35,7 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Branch: %X{BRANCH} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "logger_name": "%logger",  "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}", "branch": "%X{BRANCH}" }</Pattern>
 		</encoder>
 	</appender>
 	
@@ -51,7 +51,7 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
 		</encoder>
 	</appender>
 	
@@ -67,7 +67,7 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
 		</encoder>
 	</appender>
 	
@@ -83,7 +83,7 @@
 			<onMatch>ACCEPT</onMatch>
 		</filter>
 		<encoder>
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
 		</encoder>
 	</appender>
 
@@ -108,8 +108,8 @@
 			<onMatch>ACCEPT</onMatch>
 
 		</filter>
-		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Branch: %X{BRANCH} Event: %msg %ex%n</Pattern>
+		<encoder>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}", "branch": "%X{BRANCH}" }</Pattern>
 		</encoder>
 	</appender>
 	
@@ -135,7 +135,7 @@
 
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
 		</encoder>
 	</appender>
 	
@@ -161,7 +161,7 @@
 
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
 		</encoder>
 	</appender>
 	
@@ -187,7 +187,7 @@
 
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] User: %X{USER} Event: %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}" }</Pattern>
 		</encoder>
 	</appender>
 
@@ -206,7 +206,7 @@
 			<onMatch>DENY</onMatch>
 		</filter>
 		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-			<Pattern>[%d{yyyy-MM-dd HH:mm:ss.SSS}] %-5level %-28.28thread %-64.64logger{64} %msg %ex%n</Pattern>
+			<Pattern>{ "@timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}", "thread_name": "%thread", "logger_name": "%logger", "level": "%level", "message": "%msg", "user": "%X{USER}", "logger": "%logger" }</Pattern>
 		</encoder>
 	</appender>
 

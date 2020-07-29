@@ -21,3 +21,6 @@ ENV ELASTICSEARCH_SOCKET_TIMEOUT $ELASTICSEARCH_SOCKET_TIMEOUT
 
 # prepare and copy over the snowowl.yml file
 COPY --chown=snowowl:snowowl snowowl.yml /opt/snowowl/bbl/config/
+
+# prepare and copy over the serviceability.xml file
+COPY --chown=snowowl:snowowl serviceability.xml /opt/snowowl/bbl/config/
