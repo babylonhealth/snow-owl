@@ -2,11 +2,11 @@ FROM b2ihealthcare/snow-owl-oss:7.7.0
 
 # change the config path
 ENV SO_PATH_CONF="/opt/snowowl/bbl/config"
-# hack for test
+
 COPY --chown=snowowl:snowowl snowowl.yml /opt/snowowl/bbl/config/
 RUN mv /usr/share/snowowl/configuration/* $SO_PATH_CONF/
 
-# babylon hack since SO_PATH_CONF doesn't seem to be taken into account
+
 RUN rm -rf /usr/share/snowowl/configuration  && \
 ln -s $SO_PATH_CONF /usr/share/snowowl/configuration
 
