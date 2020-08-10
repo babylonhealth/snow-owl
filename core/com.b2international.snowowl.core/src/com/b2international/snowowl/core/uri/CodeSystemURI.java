@@ -1,6 +1,6 @@
 /*
  * Copyright 2020 B2i Healthcare Pte Ltd, http://b2i.sg
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -38,21 +38,21 @@ public final class CodeSystemURI implements Serializable {
 
 	@JsonIgnore
 	private static final Pattern URI_PATTERN = Pattern.compile("^([^\\/]+)(([\\/]{1}[^\\/\\s]+)*)$");
-	
+
 	/**
 	 * Represents the latest released version of a code system.
 	 */
 	public static final String LATEST = "LATEST";
-	
+
 	/**
 	 * Represents the latest development version of a code system.
 	 */
 	public static final String HEAD = "HEAD";
-	
+
 	private final String uri;
 	private final String codeSystem;
 	private final String path;
-	
+
 	@JsonCreator
 	public CodeSystemURI(String uri) throws BadRequestException {
 		if (Strings.isNullOrEmpty(uri)) {
@@ -62,7 +62,7 @@ public final class CodeSystemURI implements Serializable {
 		if (uri.startsWith(Branch.MAIN_PATH)) {
 			throw new BadRequestException("Malformed CodeSystem URI value: '%s' cannot start with MAIN.", uri);
 		}
-		
+
 		final Matcher matcher = URI_PATTERN.matcher(uri);
 		if (!matcher.matches()) {
 			throw new BadRequestException("Malformed CodeSystem URI value: '%s' must be in format '<shortName>/<path>'.", uri);
@@ -71,32 +71,32 @@ public final class CodeSystemURI implements Serializable {
 		this.codeSystem = matcher.group(1);
 		this.path = CompareUtils.isEmpty(matcher.group(2)) ? LATEST : matcher.group(2).substring(1); // removes the leading slash character
 	}
-	
+
 	public String getUri() {
 		return uri;
 	}
-	
+
 	public String getCodeSystem() {
 		return codeSystem;
 	}
-	
+
 	public String getPath() {
 		return path;
 	}
-	
+
 	public boolean isLatest() {
 		return LATEST.equals(getPath());
 	}
-	
+
 	public boolean isHead() {
 		return HEAD.equals(getPath());
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return Objects.hash(uri);
 	}
-	
+
 	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) return true;
@@ -125,13 +125,4 @@ public final class CodeSystemURI implements Serializable {
 		return new CodeSystemURI(uri.toString());
 	}
 
-	public static CodeSystemURI branch(String codeSystem, String path) {
-		StringBuilder uri = new StringBuilder(codeSystem);
-		if (!Strings.isNullOrEmpty(path)) {
-			uri.append(Branch.SEPARATOR);
-			uri.append(path);
-		}
-		return new CodeSystemURI(uri.toString());
-	}
-	
 }
