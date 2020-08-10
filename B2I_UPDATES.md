@@ -22,5 +22,17 @@ server. Those can be grouped in the following categories to look out for when do
     * the `package.json` - we are on a later version of some of the dependencies - keep that, if others are updated recreate the `package-lock.json` file
     * the `snow-owl-oss.launch` - might need to accept all new changes and in Eclipse add the the babylon plugin the launch config to avoid messing it up by manually changing it
     
-#### Important note:     
-Update the babylonhealth project version if required, otherwise the build fails
+## Updating
+
+# create a branch to work in:
+git checkout -b myUpdateBranch
+git push -u origin myUpdateBranch
+
+# add b2i's remote repo with name "b2i" - you only need to do this once
+git remote add b2i git@github.com:b2ihealthcare/snow-owl.git
+
+# rebase our branch against it
+git pull b2i 7.x
+
+# resolve conflicts using the checklist https://github.com/babylonhealth/snow-owl/blob/7.x/B2iUpdates.md
+git push 
