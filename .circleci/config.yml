@@ -7,8 +7,7 @@ workflows:
           context: babylon
           filters:
             branches:
-              only:
-                - 7.x
+              ignore: master
       - deploy-service-dev:
           context: babylon
           filters:
