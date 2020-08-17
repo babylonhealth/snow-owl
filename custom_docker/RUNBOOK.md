@@ -15,6 +15,8 @@ The file users.j2 is mounted to specify credentials to use for accessing SnowOwl
 
 SnowOwl uses Elasticsearch clusters as dependency.
 
+The main configuration file is the following: `custom_docker/snowowl.yml`. 
+
 ## Dependencies and Clients
  
  Clinical-Terminology is the only user of SnowOwl.
