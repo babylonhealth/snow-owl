@@ -31,4 +31,3 @@ As for the server, we use the dockerised version in custom_docker/Dockerfile.
     * the `settings.xml` file (adjustments required to push libs to Artifactory)
     * the main `pom.xml` file (distributionManagement adjustments)
     * the `Dockerfile`
-    * the `core/com.b2international.snowowl.core.rest` (plugin replacement)
