@@ -30,6 +30,7 @@ import com.b2international.snowowl.core.terminology.TerminologyRegistry;
 import com.b2international.snowowl.core.uri.CodeSystemURI;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import com.google.common.base.Preconditions;
@@ -57,7 +58,7 @@ public class CodeSystem implements Serializable {
 	public static final class Expand {
 		public static final String AVAILABLE_UPGRADES = "availableUpgrades";
 		public static final String EXTENSION_OF_BRANCH_INFO = "extensionOfBranchInfo";
-		public static final String UPGRADE_OF_BRANCH_INFO = "upgradeOfBranchInfo";
+		public static final String UPGRADE_INFO = "upgradeInfo";
 	}
 	
 	public static Builder builder() {
@@ -99,6 +100,7 @@ public class CodeSystem implements Serializable {
 		private CodeSystemURI upgradeOf;
 		private List<ExtendedLocale> locales;
 		private Map<String, Object> additionalProperties;
+		private UpgradeInfo upgradeInfo;
 		
 		@JsonCreator
 		private Builder() {}
@@ -179,8 +181,14 @@ public class CodeSystem implements Serializable {
 			return getSelf();
 		}
 		
+		@JsonSetter
+		Builder upgradeInfo(final UpgradeInfo upgradeInfo) {
+			this.upgradeInfo = upgradeInfo;
+			return  getSelf();
+		}
+		
 		public CodeSystem build() {
-			return new CodeSystem(
+			CodeSystem codeSystem = new CodeSystem(
 					oid, 
 					name, 
 					shortName, 
@@ -195,6 +203,11 @@ public class CodeSystem implements Serializable {
 					upgradeOf,
 					locales,
 					additionalProperties);
+
+			if (upgradeInfo != null) {
+				codeSystem.setUpgradeInfo(upgradeInfo);
+			}
+			return codeSystem;
 		}
 		
 		private Builder getSelf() {
@@ -216,7 +229,7 @@ public class CodeSystem implements Serializable {
 	private Map<String, Object> additionalProperties;
 	private List<CodeSystemURI> availableUpgrades;
 	private BranchInfo extensionOfBranchInfo;
-	private BranchInfo upgradeOfBranchInfo;
+	private UpgradeInfo upgradeInfo;
 	
 	// extension related fields
 	private CodeSystemURI extensionOf;
@@ -368,8 +381,8 @@ public class CodeSystem implements Serializable {
 		return extensionOfBranchInfo;
 	}
 	
-	public BranchInfo getUpgradeOfBranchInfo() {
-		return upgradeOfBranchInfo;
+	public UpgradeInfo getUpgradeInfo() {
+		return upgradeInfo;
 	}
 
 	public void setOid(final String oid) {
@@ -437,8 +450,8 @@ public class CodeSystem implements Serializable {
 		this.extensionOfBranchInfo = extensionOfBranchInfo;
 	}
 	
-	public void setUpgradeOfBranchInfo(BranchInfo upgradeOfBranchInfo) {
-		this.upgradeOfBranchInfo = upgradeOfBranchInfo;
+	public void setUpgradeInfo(UpgradeInfo upgradeInfo) {
+		this.upgradeInfo = upgradeInfo;
 	}
 	
 	/**

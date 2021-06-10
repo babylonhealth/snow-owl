@@ -15,9 +15,12 @@
  */
 package com.b2international.snowowl.snomed.datastore.index.change;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -32,18 +35,16 @@ import com.b2international.index.query.Query;
 import com.b2international.index.revision.RevisionBranch;
 import com.b2international.index.revision.RevisionSearcher;
 import com.b2international.index.revision.StagingArea;
+import com.b2international.index.revision.StagingArea.RevisionPropertyDiff;
 import com.b2international.snowowl.core.domain.RepositoryContext;
 import com.b2international.snowowl.core.repository.BaseRepositoryPreCommitHook;
 import com.b2international.snowowl.core.repository.ChangeSetProcessor;
 import com.b2international.snowowl.core.request.BranchRequest;
 import com.b2international.snowowl.snomed.common.SnomedConstants.Concepts;
+import com.b2international.snowowl.snomed.common.SnomedRf2Headers;
 import com.b2international.snowowl.snomed.core.domain.Rf2ReleaseType;
 import com.b2international.snowowl.snomed.core.domain.refset.SnomedRefSetType;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedConceptDocument;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedDescriptionIndexEntry;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedOWLRelationshipDocument;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRefSetMemberIndexEntry;
-import com.b2international.snowowl.snomed.datastore.index.entry.SnomedRelationshipIndexEntry;
+import com.b2international.snowowl.snomed.datastore.index.entry.*;
 import com.b2international.snowowl.snomed.datastore.request.SnomedOWLExpressionConverter;
 import com.b2international.snowowl.snomed.datastore.request.SnomedOWLExpressionConverterResult;
 import com.b2international.snowowl.snomed.datastore.request.rf2.importer.Rf2ImportConfiguration;
@@ -59,6 +60,8 @@ import com.google.common.collect.Sets;
  * @see BaseRepositoryPreCommitHook
  */
 public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommitHook {
+
+	private static final Set<String> ACTIVE_AND_TERM_FIELDS = Set.of(SnomedDescriptionIndexEntry.Fields.ACTIVE, SnomedDescriptionIndexEntry.Fields.TERM);
 
 	public SnomedRepositoryPreCommitHook(Logger log) {
 		super(log);
@@ -103,6 +106,9 @@ public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommit
 		staging.getRemovedObjects(SnomedRelationshipIndexEntry.class)
 			.filter(detachedRelationship -> Concepts.IS_A.equals(detachedRelationship.getTypeId()))
 			.forEach(detachedRelationship -> {
+				// XXX: IS A relationships are expected to have a destination ID, not a value
+				checkState(!detachedRelationship.hasValue(), "IS A relationship found with value: %s", detachedRelationship.getId());
+				
 				if (Concepts.STATED_RELATIONSHIP.equals(detachedRelationship.getCharacteristicTypeId())) {
 					statedSourceIds.add(detachedRelationship.getSourceId());
 					statedDestinationIds.add(detachedRelationship.getDestinationId());
@@ -115,12 +121,11 @@ public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommit
 		staging.getRemovedObjects(SnomedRefSetMemberIndexEntry.class)
 			.filter(detachedMember -> SnomedRefSetType.OWL_AXIOM == detachedMember.getReferenceSetType())
 			.forEach(detachedOwlMember -> {
-				collectIds(statedSourceIds, statedDestinationIds, detachedOwlMember.getReferencedComponentId(), detachedOwlMember.getOwlExpression(), expressionConverter);
+				collectIds(statedSourceIds, statedDestinationIds, detachedOwlMember, expressionConverter);
 			});
 		
 		final LongSet statedConceptIds = PrimitiveSets.newLongOpenHashSet();
 		final LongSet inferredConceptIds = PrimitiveSets.newLongOpenHashSet();
-		
 		
 		if (!statedDestinationIds.isEmpty()) {
 			for (SnomedConceptDocument statedDestinationConcept : index.get(SnomedConceptDocument.class, statedDestinationIds)) {
@@ -153,24 +158,21 @@ public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommit
 			}
 		});
 		
-		staging.getChangedRevisions(SnomedDescriptionIndexEntry.class, Set.of(
-				SnomedDescriptionIndexEntry.Fields.ACTIVE,
-				SnomedDescriptionIndexEntry.Fields.TERM)).forEach(diff -> {
-
-			SnomedDescriptionIndexEntry newRevision = (SnomedDescriptionIndexEntry) diff.newRevision;
-			
-			if (newRevision.isFsn()) {
+		staging.getChangedRevisions(SnomedDescriptionIndexEntry.class)
+			.filter(diff -> ((SnomedDescriptionIndexEntry) diff.newRevision).isFsn())
+			.filter(diff -> diff.hasRevisionPropertyChanges(ACTIVE_AND_TERM_FIELDS))
+			.forEach(diff -> {
+				SnomedDescriptionIndexEntry newRevision = (SnomedDescriptionIndexEntry) diff.newRevision;
 				statedSourceIds.add(newRevision.getConceptId());
 				inferredSourceIds.add(newRevision.getConceptId());
-			}
-		});
+			});
 
-		staging.getNewObjects(SnomedDescriptionIndexEntry.class).forEach(newDescription -> {
-			if (newDescription.isFsn() && newDescription.isActive()) {
+		staging.getNewObjects(SnomedDescriptionIndexEntry.class)
+			.filter(newDescription -> newDescription.isFsn() && newDescription.isActive())
+			.forEach(newDescription -> {
 				statedSourceIds.add(newDescription.getConceptId());
 				inferredSourceIds.add(newDescription.getConceptId());
-			}
-		});
+			});
 
 		if (!statedSourceIds.isEmpty()) {
 			final Query<SnomedConceptDocument> statedSourceConceptsQuery = Query.select(SnomedConceptDocument.class)
@@ -219,7 +221,18 @@ public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommit
 			statedConceptIds.add(longId);
 			inferredConceptIds.add(longId);
 		});
-
+		
+		// collect all reactivated concepts for the taxonomy to properly re-register them in the tree even if they don't carry stated/inferred information in this commit, but they have something in the index
+		staging.getChangedRevisions(SnomedConceptDocument.class, Set.of(SnomedRf2Headers.FIELD_ACTIVE))
+			.forEach(diff -> {
+				RevisionPropertyDiff propertyDiff = diff.getRevisionPropertyDiff(SnomedRf2Headers.FIELD_ACTIVE);
+				if ("false".equals(propertyDiff.getOldValue()) && "true".equals(propertyDiff.getNewValue())) {
+					long longId = Long.parseLong(diff.newRevision.getId());
+					statedConceptIds.add(longId);
+					inferredConceptIds.add(longId);
+				}
+			});
+		
 		log.trace("Retrieving taxonomic information from store...");
 
 		final boolean checkCycles = !(context instanceof Rf2TransactionContext);
@@ -228,13 +241,13 @@ public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommit
 		final Taxonomy statedTaxonomy = Taxonomies.stated(index, expressionConverter, staging, statedConceptIds, checkCycles);
 
 		// XXX change processor execution order is important!!!
-		return ImmutableList.<ChangeSetProcessor>builder()
-				// execute description change processor to get proper acceptabilityMap values before executing other change processors
-				// those values will be used in the ConceptChangeProcessor for example to properly compute the preferredDescriptions derived field
-				.add(new DescriptionChangeProcessor())
-				.add(new ConceptChangeProcessor(DoiDataProvider.INSTANCE, SnomedIconProvider.INSTANCE.getAvailableIconIds(), statedTaxonomy, inferredTaxonomy))
-				.add(new RelationshipChangeProcessor())
-				.build();
+		return List.of(
+			// execute description change processor to get proper acceptabilityMap values before executing other change processors
+			// those values will be used in the ConceptChangeProcessor for example to properly compute the preferredDescriptions derived field
+			new DescriptionChangeProcessor(),
+			new ConceptChangeProcessor(DoiDataProvider.INSTANCE, SnomedIconProvider.INSTANCE.getAvailableIconIds(), statedTaxonomy, inferredTaxonomy),
+			new RelationshipChangeProcessor()
+		);
 	}
 	
 	@Override
@@ -259,29 +272,39 @@ public final class SnomedRepositoryPreCommitHook extends BaseRepositoryPreCommit
 		}
 	}
 
-	private void collectIds(final Set<String> sourceIds, final Set<String> destinationIds, Stream<SnomedRelationshipIndexEntry> newRelationships, String characteristicTypeId) {
-		newRelationships
-			.filter(newRelationship -> Concepts.IS_A.equals(newRelationship.getTypeId()))
-			.filter(newRelationship -> newRelationship.getCharacteristicTypeId().equals(characteristicTypeId))
-			.forEach(newRelationship -> {
-				sourceIds.add(newRelationship.getSourceId());
-				destinationIds.add(newRelationship.getDestinationId());
+	private void collectIds(final Set<String> sourceIds, final Set<String> destinationIds, Stream<SnomedRelationshipIndexEntry> relationships, String characteristicTypeId) {
+		relationships
+			.filter(relationship -> Concepts.IS_A.equals(relationship.getTypeId()))
+			.filter(relationship -> relationship.getCharacteristicTypeId().equals(characteristicTypeId))
+			.forEach(relationship -> {
+				// XXX: IS A relationships are expected to have a destination ID, not a value
+				checkState(!relationship.hasValue(), "IS A relationship found with value: %s", relationship.getId());
+				
+				sourceIds.add(relationship.getSourceId());
+				destinationIds.add(relationship.getDestinationId());
 			});
 	}
 	
 	private void collectIds(Set<String> sourceIds, Set<String> destinationIds, Stream<SnomedRefSetMemberIndexEntry> owlMembers, SnomedOWLExpressionConverter expressionConverter) {
 		owlMembers.forEach(owlMember -> {
-			collectIds(sourceIds, destinationIds, owlMember.getReferencedComponentId(), owlMember.getOwlExpression(), expressionConverter);
+			collectIds(sourceIds, destinationIds, owlMember, expressionConverter);
 		});
 	}
 
-	private void collectIds(Set<String> sourceIds, Set<String> destinationIds, String referencedComponentId, String owlExpression, SnomedOWLExpressionConverter expressionConverter) {
+	private void collectIds(Set<String> sourceIds, Set<String> destinationIds, SnomedRefSetMemberIndexEntry owlMember, SnomedOWLExpressionConverter expressionConverter) {
+		final String memberId = owlMember.getId();
+		final String referencedComponentId = owlMember.getReferencedComponentId();
+		final String owlExpression = owlMember.getOwlExpression();
+		
 		SnomedOWLExpressionConverterResult result = expressionConverter.toSnomedOWLRelationships(referencedComponentId, owlExpression);
 		if (!CompareUtils.isEmpty(result.getClassAxiomRelationships())) {
-			for (SnomedOWLRelationshipDocument classAxiom : result.getClassAxiomRelationships()) {
-				if (Concepts.IS_A.equals(classAxiom.getTypeId())) {
+			for (SnomedOWLRelationshipDocument owlRelationship : result.getClassAxiomRelationships()) {
+				if (Concepts.IS_A.equals(owlRelationship.getTypeId())) {
+					// XXX: IS A relationships are expected to have a destination ID, not a value
+					checkState(!owlRelationship.hasValue(), "IS A relationship found with value on OWL member: %s", memberId);
+					
 					sourceIds.add(referencedComponentId);
-					destinationIds.add(classAxiom.getDestinationId());
+					destinationIds.add(owlRelationship.getDestinationId());
 				}
 			}
 		}
