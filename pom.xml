@@ -953,11 +953,11 @@
 	<distributionManagement>
 		<repository>
 			<id>artifactory-releases</id>
-			<url>https://artifactory.ops.babylontech.co.uk/artifactory/babylon-maven-releases</url>
+			<url>${env.ARTIFACTORY_URL}/babylon-maven-releases</url>
 		</repository>
 		<snapshotRepository>
 			<id>artifactory-snapshots</id>
-			<url>https://artifactory.ops.babylontech.co.uk/artifactory/babylon-maven-snapshots</url>
+			<url>${env.ARTIFACTORY_URL}/babylon-maven-snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
 
