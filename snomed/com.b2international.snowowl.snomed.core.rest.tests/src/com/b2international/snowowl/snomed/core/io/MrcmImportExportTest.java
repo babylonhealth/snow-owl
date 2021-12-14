@@ -55,7 +55,7 @@ public class MrcmImportExportTest {
 		final Path path = PlatformUtil.toAbsolutePath(MrcmImportExportTest.class, "mrcm_import_test.json");
 		
 		try (final InputStream stream = Files.newInputStream(path, StandardOpenOption.READ)) {
-			Services.service(MrcmImporter.class).doImport(Services.getAuthorizationToken(), RestExtensions.USER, stream);
+			Services.service(MrcmImporter.class).doImport(Services.getAuthorizationToken(), RestExtensions.USER, IBranchPath.MAIN_BRANCH, stream);
 		} 
 		
 		// verify content
@@ -75,7 +75,7 @@ public class MrcmImportExportTest {
 		Path exportedFile = target.resolve("mrcm_" + Dates.now() + ".csv");
 		assertFalse(exportedFile.toFile().exists());
 		try (final OutputStream stream = Files.newOutputStream(exportedFile, StandardOpenOption.CREATE_NEW)) {
-			Services.service(MrcmExporter.class).doExport(Services.getAuthorizationToken(), stream, MrcmExportFormat.CSV);
+			Services.service(MrcmExporter.class).doExport(Services.getAuthorizationToken(), stream, MrcmExportFormat.CSV, IBranchPath.MAIN_BRANCH);
 		}
 		assertTrue(exportedFile.toFile().exists());
 	}
