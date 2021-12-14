@@ -71,6 +71,9 @@ public final class MrcmCommand extends Command {
 		@Parameters(paramLabel = "FILE", description = "The JSON file with MRCM rules to import")
 		String file;
 		
+		@Parameters(paramLabel = "BRANCH", description = "The branch to import MRCM rules to")
+		String branch;
+		
 		@Override
 		public void run(CommandLineStream out) {
 			final User user = out.authenticate(getBus());
@@ -81,7 +84,7 @@ public final class MrcmCommand extends Command {
 			}
 			
 			try (final InputStream content = Files.newInputStream(Paths.get(file), StandardOpenOption.READ)) {
-				ApplicationContext.getServiceForClass(MrcmImporter.class).doImport(user, content);
+				ApplicationContext.getServiceForClass(MrcmImporter.class).doImport(user, branch, content);
 			} catch (IOException e) {
 				out.println("Failed to import MRCM JSON file: " + file);
 			}			
@@ -99,6 +102,9 @@ public final class MrcmCommand extends Command {
 
 		@Parameters(paramLabel = "PATH", description = "Output directory to export the MRCM rules to. The output file will be automatically created.")
 		String path;
+		
+		@Parameters(paramLabel = "BRANCH", description = "SNOMEDCT branchpath to export the MRCM rules from.")
+		String branch;
 		
 		@Option(names = { "-f", "--format" }, defaultValue = "JSON", description = "MRCM Export Format option. CSV and JSON are supported.")
 		MrcmExportFormat format;
@@ -119,7 +125,7 @@ public final class MrcmCommand extends Command {
 			final Path exportPath = outputFolder.resolve("mrcm_" + Dates.now() + "." + format.name().toLowerCase());
 			
 			try (final OutputStream stream = Files.newOutputStream(exportPath, StandardOpenOption.CREATE)) {
-				ApplicationContext.getServiceForClass(MrcmExporter.class).doExport(user, stream, format);
+				ApplicationContext.getServiceForClass(MrcmExporter.class).doExport(user, stream, format, branch);
 				out.println("Exported MRCM rules to " + exportPath + " in " + format.name() + " format.");
 			} catch (IOException e) {
 				e.printStackTrace();

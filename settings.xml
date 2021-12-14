@@ -5,13 +5,13 @@
 	<servers>
 		<server>
 			<id>artifactory-releases</id>
-			<username>${env.ARTIFACTORY_USER_RW}</username>
-			<password>${env.ARTIFACTORY_PWD_RW}</password>
+			<username>${env.ARTIFACTORY_USER}</username>
+			<password>${env.ARTIFACTORY_PWD}</password>
 		</server>
 		<server>
 			<id>artifactory-snapshots</id>
-			<username>${env.ARTIFACTORY_USER_RW}</username>
-			<password>${env.ARTIFACTORY_PWD_RW}</password>
+			<username>${env.ARTIFACTORY_USER}</username>
+			<password>${env.ARTIFACTORY_PWD}</password>
 		</server>
 	</servers>
 
