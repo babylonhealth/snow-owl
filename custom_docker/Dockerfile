@@ -1,4 +1,4 @@
-FROM b2ihealthcare/snow-owl-oss:f0a33069ff08
+FROM b2ihealthcare/snow-owl-oss@sha256:4a50f060776f1a4f2e35d60cc8ac6284b00c42cd28e1b96991eb5ce8ba0a87a
 
 # change the config path
 ENV SO_PATH_CONF="/opt/snowowl/bbl/config"
