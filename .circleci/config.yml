@@ -3,12 +3,6 @@ workflows:
   version: 2
   flow:
     jobs:
-      - release-libraries:
-          context: babylon
-          filters:
-            branches:
-              only:
-                - 7.x
       - publish-service-dev:
           context: babylon
           filters:
@@ -24,7 +18,6 @@ workflows:
               only: /^.*/
 env: &env
   working_directory: ~/project
-  resource_class: large
   docker:
     - image: docker:19.03.14-git
       environment:
@@ -33,36 +26,6 @@ env: &env
     JAVA_HOME: /usr/lib/jvm/java-11-openjdk
 
 jobs:
-  release-libraries:
-    <<: *env
-    steps:
-      - checkout
-      - setup_remote_docker
-      - restore_cache:
-          keys:
-            - snow-owl-mvn-cache-{{ checksum "pom.xml" }}
-            - snow-owl-mvn-cache-
-          paths:
-            - "~/.m2"
-            - "/root/.m2"
-      - run:
-          name: Build prerequisites
-          command: |
-            docker login -u "$DOCKER_USER" -p "$DOCKER_PASS" quay.io
-            apk add --no-cache make nodejs npm openjdk11 --repository=http://dl-cdn.alpinelinux.org/alpine/edge/community
-            npm config set unsafe-perm true
-            npm install -g npm
-      - save_cache:
-          key: snow-owl-mvn-cache-{{ checksum "pom.xml" }}
-          paths:
-            - "~/.m2"
-            - "/root/.m2"
-      - run:
-          name: Build and deploy libraries
-          command: |
-            echo 'export PATH=$JAVA_HOME/bin:$PATH' >> $BASH_ENV
-            source $BASH_ENV
-            ./mvnw -s .circleci/settings.xml deploy -DskipTests -Dtycho.localArtifacts=$LOCAL_ARTIFACTS
   publish-service-dev:
     <<: *env
     steps:
