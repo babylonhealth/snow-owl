@@ -18,7 +18,6 @@ workflows:
               only: /^.*/
 env: &env
   working_directory: ~/project
-  resource_class: large
   docker:
     - image: docker:19.03.14-git
       environment:
