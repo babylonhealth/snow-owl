@@ -1,5 +1,0 @@
-
-globalParameter: SOME_PARAM
-
-allParams:
-  doubleAttribute: ${SOME_ATTRIBUTE}

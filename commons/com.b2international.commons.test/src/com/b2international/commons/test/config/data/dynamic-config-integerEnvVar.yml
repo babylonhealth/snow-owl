@@ -1,5 +1,0 @@
-
-globalParameter: SOME_PARAM
-
-allParams:
-  integerAttribute: ${SOME_ATTRIBUTE}
