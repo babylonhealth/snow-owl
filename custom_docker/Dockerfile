@@ -1,7 +1,12 @@
-FROM b2ihealthcare/snow-owl-oss@sha256:4a50f060776f1a4f2e35d60cc8ac6284b00c42cd28e1b96991eb5ce8ba0a87ad
+FROM b2ihealthcare/snow-owl-oss:7.18.0
 
 # change the config path
 ENV SO_PATH_CONF="/opt/snowowl/bbl/config"
+
+# Temporary work-around to disable Log4j exploit
+# https://github.com/b2ihealthcare/snow-owl/issues/964#issuecomment-1027102086
+# SO_JAVA_OPTS is used here: https://github.com/b2ihealthcare/snow-owl/blob/7.x/releng/com.b2international.snowowl.server.update/assembly/common/bin/snowowl.sh#L49-L73
+ENV SO_JAVA_OPTS="-Dlog4j2.formatMsgNoLookups=true $SO_JAVA_OPTS"
 
 COPY --chown=snowowl:snowowl snowowl.yml /opt/snowowl/bbl/config/
 RUN mv /usr/share/snowowl/configuration/* $SO_PATH_CONF/
